@@ -10,7 +10,6 @@ void main() {
 
 const _ink = Color(0xFF253047);
 const _purple = Color(0xFF7558E8);
-const _mint = Color(0xFFBDF4D7);
 const _paper = Color(0xFFFFFBF4);
 
 class RasmatiApp extends StatelessWidget {
