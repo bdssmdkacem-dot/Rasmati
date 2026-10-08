@@ -34,7 +34,36 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
   bool _autoRemove = true;
   bool _busy = false;
   Size? _canvasSize;
+  Size? _imageSize;
   Offset? _lastPoint;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImageSize();
+  }
+
+  Future<void> _loadImageSize() async {
+    try {
+      final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
+      if (mounted && decoded != null) {
+        setState(() => _imageSize = Size(decoded.width.toDouble(), decoded.height.toDouble()));
+      }
+    } catch (_) {
+      // The apply action reports a readable error if the image cannot decode.
+    }
+  }
+
+  Rect _imageRect(Size size) {
+    final imageSize = _imageSize;
+    if (imageSize == null || imageSize.width == 0 || imageSize.height == 0) {
+      return Offset.zero & size;
+    }
+    final scale = math.min(size.width / imageSize.width, size.height / imageSize.height);
+    final width = imageSize.width * scale;
+    final height = imageSize.height * scale;
+    return Rect.fromLTWH((size.width - width) / 2, (size.height - height) / 2, width, height);
+  }
 
   void _beginStroke(Offset point) {
     setState(() {
@@ -210,10 +239,16 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
                           Image.file(widget.imageFile, fit: BoxFit.contain),
                           GestureDetector(
                             behavior: HitTestBehavior.translucent,
-                            onPanStart: (details) => _beginStroke(_normalized(details.localPosition)),
-                            onPanUpdate: (details) => _extendStroke(_normalized(details.localPosition)),
+                            onPanStart: (details) {
+                              final point = _normalized(details.localPosition);
+                              if (point != null) _beginStroke(point);
+                            },
+                            onPanUpdate: (details) {
+                              final point = _normalized(details.localPosition);
+                              if (point != null) _extendStroke(point);
+                            },
                             onPanEnd: (_) => _endStroke(),
-                            child: CustomPaint(painter: _StrokePainter(_strokes)),
+                            child: CustomPaint(painter: _StrokePainter(_strokes, _imageRect(_canvasSize ?? Size.zero)),
                           ),
                         ],
                       ),
@@ -255,16 +290,17 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     );
   }
 
-  Offset _normalized(Offset point) {
-    final size = _canvasSize ?? Size.zero;
-    if (size.width == 0 || size.height == 0) return Offset.zero;
-    return Offset((point.dx / size.width).clamp(0.0, 1.0).toDouble(), (point.dy / size.height).clamp(0.0, 1.0).toDouble());
+  Offset? _normalized(Offset point) {
+    final rect = _imageRect(_canvasSize ?? Size.zero);
+    if (!rect.contains(point) || rect.width == 0 || rect.height == 0) return null;
+    return Offset(((point.dx - rect.left) / rect.width).clamp(0.0, 1.0).toDouble(), ((point.dy - rect.top) / rect.height).clamp(0.0, 1.0).toDouble());
   }
 }
 
 class _StrokePainter extends CustomPainter {
-  const _StrokePainter(this.strokes);
+  const _StrokePainter(this.strokes, this.imageRect);
   final List<_BrushStroke> strokes;
+  final Rect imageRect;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -272,16 +308,16 @@ class _StrokePainter extends CustomPainter {
       if (stroke.points.isEmpty) continue;
       final paint = Paint()
         ..color = stroke.mode == BrushMode.erase ? const Color(0x667558E8) : const Color(0x6671C99B)
-        ..strokeWidth = math.max(18, size.shortestSide * stroke.radius * 2).toDouble()
+        ..strokeWidth = math.max(18, imageRect.shortestSide * stroke.radius * 2).toDouble()
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke;
       if (stroke.points.length == 1) {
-        canvas.drawCircle(Offset(stroke.points.first.dx * size.width, stroke.points.first.dy * size.height), paint.strokeWidth / 2, paint..style = PaintingStyle.fill);
+        canvas.drawCircle(Offset(imageRect.left + stroke.points.first.dx * imageRect.width, imageRect.top + stroke.points.first.dy * imageRect.height), paint.strokeWidth / 2, paint..style = PaintingStyle.fill);
       } else {
-        final path = Path()..moveTo(stroke.points.first.dx * size.width, stroke.points.first.dy * size.height);
+        final path = Path()..moveTo(imageRect.left + stroke.points.first.dx * imageRect.width, imageRect.top + stroke.points.first.dy * imageRect.height);
         for (final point in stroke.points.skip(1)) {
-          path.lineTo(point.dx * size.width, point.dy * size.height);
+          path.lineTo(imageRect.left + point.dx * imageRect.width, imageRect.top + point.dy * imageRect.height);
         }
         canvas.drawPath(path, paint);
       }
