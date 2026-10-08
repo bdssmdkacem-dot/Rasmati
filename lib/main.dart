@@ -668,9 +668,10 @@ class _AnimationStudioState extends State<AnimationStudio>
 
   void _selectMotion(DrawingMotion motion) {
     setState(() => _motion = motion);
-    _controller
-      ..reset()
-      ..repeat(reverse: true);
+    _controller.reset();
+    if (_playing) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   Widget _animatedDrawing() {
