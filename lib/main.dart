@@ -688,18 +688,23 @@ class _AnimationStudioState extends State<AnimationStudio>
           case DrawingMotion.bounce:
             dy = -18 * t;
             scale = 1 + (0.025 * wave.abs());
+            break;
           case DrawingMotion.walk:
             dx = 9 * wave;
             angle = 0.035 * wave;
+            break;
           case DrawingMotion.dance:
             angle = 0.10 * wave;
             dy = -7 * wave.abs();
+            break;
           case DrawingMotion.wave:
             angle = 0.045 * wave;
             dx = 3 * wave;
+            break;
           case DrawingMotion.float:
             dy = -13 * wave;
             dx = 4 * math.cos(t * math.pi * 2);
+            break;
         }
 
         return Transform.translate(
