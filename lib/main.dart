@@ -100,8 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Row(
                       children: [
                         RasmatiMark(size: 48),
-                        const SizedBox(width: 12),
-                        const Expanded(
+                        SizedBox(width: 12),
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -125,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-                        const _TinyBadge(),
+                        _TinyBadge(),
                       ],
                     ),
                     const SizedBox(height: 28),
