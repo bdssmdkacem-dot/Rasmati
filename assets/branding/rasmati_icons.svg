@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="96" viewBox="0 0 320 96">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5">
+   <g transform="translate(8 8)" stroke="#7558E8"><rect width="48" height="48" rx="15" fill="#F0EBFF" stroke="none"/><path d="M15 33V18a3 3 0 0 1 3-3h13a3 3 0 0 1 3 3v15z"/><path d="M19 23l5 4 7-8"/></g>
+   <g transform="translate(72 8)" stroke="#36B8A5"><rect width="48" height="48" rx="15" fill="#E2F8F3" stroke="none"/><rect x="12" y="15" width="24" height="18" rx="4"/><circle cx="24" cy="24" r="5"/><path d="M17 15l3-4h8l3 4"/></g>
+   <g transform="translate(136 8)" stroke="#7558E8"><rect width="48" height="48" rx="15" fill="#F0EBFF" stroke="none"/><path d="M24 10l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M35 34l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" stroke="#FF7B6B"/></g>
+   <g transform="translate(200 8)" stroke="#FF7B6B"><rect width="48" height="48" rx="15" fill="#FFF0ED" stroke="none"/><path d="M15 32V17l9-5 9 5v15l-9 5z"/><path d="M15 17l9 5 9-5M24 22v15"/></g>
+   <g transform="translate(264 8)" stroke="#D99A19"><rect width="48" height="48" rx="15" fill="#FFF5D9" stroke="none"/><circle cx="24" cy="24" r="8"/><path d="M24 10v4M24 34v4M10 24h4M34 24h4M14 14l3 3M31 31l3 3M34 14l-3 3M17 31l-3 3"/></g>
+  </g>
+</svg>
