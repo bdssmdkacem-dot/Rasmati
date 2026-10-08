@@ -30,34 +30,40 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 - Added image and path_provider dependencies for local pixel processing and temporary PNG output.
 - Aligned manual brush coordinates to the actual BoxFit.contain image bounds so strokes map to the drawing rather than the surrounding canvas.
 - Added a separate automatic-removal preview action; preview remains local and can be recalculated after changing threshold.
+- Established the first Rasmati brand kit: `assets/branding/rasmati_icon.svg`, `rasmati_mark.svg`, `rasmati_foreground.svg`, and a functional icon sheet `rasmati_icons.svg`.
+- Added `BRAND_GUIDE.md` with the brand story, color tokens, Arabic/RTL UI rules, icon consistency guidance, and asset workflow.
+- Added `lib/branding.dart` with shared color tokens and a Flutter-native `RasmatiMark`; replaced the generic sparkle tile in the home header with the brand mark and applied secondary/tertiary brand colors.
+- Configured `flutter_launcher_icons` and updated GitHub Actions to render editable SVG sources to PNG and generate Android launcher resources reproducibly during CI.
 
 ## Latest commit
 
-- Commit: 6cbc700b400283c401ce9c4b141131a3754a35b4
-- Message: Fix flutter analyze unused constant
-- [Commit link](https://github.com/bdssmdkacem-dot/Rasmati/commit/6cbc700b400283c401ce9c4b141131a3754a35b4)
+- Commit: e6d72196902399a0c4a87bb2b5db1fc5948a96ff
+- Message: Fix const lint after applying Rasmati logo
+- [Commit link](https://github.com/bdssmdkacem-dot/Rasmati/commit/e6d72196902399a0c4a87bb2b5db1fc5948a96ff)
 
 ## Verification status
 
 - Latest CI run: [Flutter CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596)
 - Baseline commit `6cbc700b400283c401ce9c4b141131a3754a35b4` passed `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
-- Background-editor changes are **not yet verified**. The latest verification attempt is [CI run #9](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37853132665); wait for `flutter analyze`, tests, and APK build to finish before calling this stage complete.
+- Background-editor changes are **not yet fully verified**. The prior run passed analysis and tests but the APK build had not completed at the last check; see [CI run #9](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37853132665).
+- Branding/launcher-icon generation is **pending CI verification**. A first branding run found two const-lint infos in the home header; these were fixed in commit `e6d72196902399a0c4a87bb2b5db1fc5948a96ff`. Check the latest run before declaring the APK build clean.
 
 ## Known limitations / not implemented yet
 
 - Motion presets animate the whole image; limbs/body parts are not independently rigged.
-- Background removal and manual edge correction are not implemented yet.
+- Background removal and manual edge correction are implemented in code, but require CI completion and real-image/device QA before being considered production-ready.
+- The new SVG brand sources are committed. Android launcher PNGs/resources are generated during CI, so check the latest workflow and APK artifact before claiming the launcher icon is verified in a build.
 - MP4/video export is not implemented; the current UI marks export as not yet available.
 - No commercial release readiness or device QA has been established yet.
 
 ## Next steps (in order)
 
-1. Verify the background-editor commits with the latest CI run; fix any analyzer, test, or APK-build failures.
+1. Verify the latest branding/launcher-icon CI run, then verify the background-editor build and tests; fix any failure before marking either complete.
 2. Validate background removal on sample drawings with dark lines, pale colors, white interior details, and non-white paper; tune flood-fill behavior and brush size if needed.
 3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; do not claim automatic rigging is reliable before it is implemented and tested.
 4. Implement video export (MP4) and verify on a real Android device.
 5. Add regression tests for import, background cleanup, preview controls, editing, and export; verify privacy/storage behavior.
-6. Only then assess release signing, app icon, permissions, performance, and Play Store readiness.
+6. Review launcher icon on device, add store icon/screenshots, then assess release signing, permissions, performance, accessibility, and Play Store readiness.
 
 ## Continuation rules
 
