@@ -97,9 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    Row(
+                    const Row(
                       children: [
-                        const RasmatiMark(size: 48),
+                        RasmatiMark(size: 48),
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Column(
