@@ -37,16 +37,16 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Latest commit
 
-- Commit: 17f44c9ffee5e74601759d5f72b829532f47fe5f
-- Message: Fix unnecessary const warnings in branded home header
-- [Commit link](https://github.com/bdssmdkacem-dot/Rasmati/commit/17f44c9ffee5e74601759d5f72b829532f47fe5f)
+- Code fix commit: 17f44c9ffee5e74601759d5f72b829532f47fe5f — [Fix unnecessary const warnings](https://github.com/bdssmdkacem-dot/Rasmati/commit/17f44c9ffee5e74601759d5f72b829532f47fe5f)
+- Latest hand-off update commit: 49b7d2f0d60b195a43ee5a19f87dcecb971dcf8a — [Record fix and CI status](https://github.com/bdssmdkacem-dot/Rasmati/commit/49b7d2f0d60b195a43ee5a19f87dcecb971dcf8a)
 
 ## Verification status
 
-- Latest CI run: [Flutter CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596)
-- Baseline commit `6cbc700b400283c401ce9c4b141131a3754a35b4` passed `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
-- Background-editor changes are **not yet fully verified**. The prior run passed analysis and tests but the APK build had not completed at the last check; see [CI run #9](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37853132665).
-- Branding/launcher-icon generation is **pending CI verification**. The next analysis run failed because `lib/main.dart` had three `unnecessary_const` infos inside a `const Row`; removed the redundant nested `const` keywords and committed the fix as `17f44c9ffee5e74601759d5f72b829532f47fe5f`. The new CI run must pass analysis, tests, and APK build before declaring this resolved.
+- Latest verified CI: [run #29](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37854578762) for code commit `17f44c9ffee5e74601759d5f72b829532f47fe5f` — **success**.
+- Follow-up CI: [run #30](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37854592514) for hand-off update commit `49b7d2f0d60b195a43ee5a19f87dcecb971dcf8a` — **success**.
+- Both successful runs completed `flutter create --platforms=android .`, SVG-to-PNG rendering, `flutter pub get`, `dart run flutter_launcher_icons`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and APK artifact upload.
+- The three `unnecessary_const` infos in `lib/main.dart` were fixed by removing redundant nested `const` keywords. The current CI validates launcher-icon generation and a debug APK build; visual confirmation on a physical Android launcher remains pending.
+- Background-editor code compiles and the existing tests pass, but image-quality/device QA on representative drawings is still pending; do not treat automatic removal as production-proven yet.
 
 ## Known limitations / not implemented yet
 
@@ -58,8 +58,8 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Next steps (in order)
 
-1. Verify the latest branding/launcher-icon CI run, then verify the background-editor build and tests; fix any failure before marking either complete.
-2. Validate background removal on sample drawings with dark lines, pale colors, white interior details, and non-white paper; tune flood-fill behavior and brush size if needed.
+1. Validate background removal on sample drawings with dark outlines, pale colors, white interior details, and non-white paper; add focused regression tests for edge-connected paper removal and enclosed white details.
+2. Inspect the generated launcher icon on a real Android device and confirm adaptive-icon masking/appearance.
 3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; do not claim automatic rigging is reliable before it is implemented and tested.
 4. Implement video export (MP4) and verify on a real Android device.
 5. Add regression tests for import, background cleanup, preview controls, editing, and export; verify privacy/storage behavior.
