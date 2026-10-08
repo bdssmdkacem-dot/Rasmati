@@ -35,8 +35,8 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 ## Verification status
 
 - Latest CI run: [Flutter CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596)
-- At last check, the run was IN PROGRESS. Do not claim the fix/build is fully verified until analysis, tests, and APK build have completed successfully.
-- APK artifact should be available from the Actions run page only if the workflow completes successfully.
+- **PASSED** — run completed successfully. `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload all succeeded.
+- Debug APK artifact: open the Actions run page above and download the artifact named `rasmati-debug-apk`.
 
 ## Known limitations / not implemented yet
 
@@ -47,7 +47,7 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Next steps (in order)
 
-1. Check the latest GitHub Actions run and resolve any actual failing step before adding features.
+1. Build and automated checks passed for commit `6cbc700b400283c401ce9c4b141131a3754a35b4` in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
 2. Add a safe, usable background-removal workflow with manual correction while preserving the original drawing.
 3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; avoid pretending automatic rigging is reliable before it is implemented and tested.
 4. Implement video export (MP4) and verify on a real Android device.
