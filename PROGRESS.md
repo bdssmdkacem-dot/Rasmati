@@ -37,16 +37,16 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Latest commit
 
-- Commit: e6d72196902399a0c4a87bb2b5db1fc5948a96ff
-- Message: Fix const lint after applying Rasmati logo
-- [Commit link](https://github.com/bdssmdkacem-dot/Rasmati/commit/e6d72196902399a0c4a87bb2b5db1fc5948a96ff)
+- Commit: 17f44c9ffee5e74601759d5f72b829532f47fe5f
+- Message: Fix unnecessary const warnings in branded home header
+- [Commit link](https://github.com/bdssmdkacem-dot/Rasmati/commit/17f44c9ffee5e74601759d5f72b829532f47fe5f)
 
 ## Verification status
 
 - Latest CI run: [Flutter CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596)
 - Baseline commit `6cbc700b400283c401ce9c4b141131a3754a35b4` passed `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
 - Background-editor changes are **not yet fully verified**. The prior run passed analysis and tests but the APK build had not completed at the last check; see [CI run #9](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37853132665).
-- Branding/launcher-icon generation is **pending CI verification**. A first branding run found two const-lint infos in the home header; these were fixed in commit `e6d72196902399a0c4a87bb2b5db1fc5948a96ff`. Check the latest run before declaring the APK build clean.
+- Branding/launcher-icon generation is **pending CI verification**. The next analysis run failed because `lib/main.dart` had three `unnecessary_const` infos inside a `const Row`; removed the redundant nested `const` keywords and committed the fix as `17f44c9ffee5e74601759d5f72b829532f47fe5f`. The new CI run must pass analysis, tests, and APK build before declaring this resolved.
 
 ## Known limitations / not implemented yet
 
