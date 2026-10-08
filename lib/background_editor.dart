@@ -322,7 +322,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
                               if (point != null) _extendStroke(point);
                             },
                             onPanEnd: (_) => _endStroke(),
-                            child: CustomPaint(painter: _StrokePainter(_strokes, _imageRect(_canvasSize ?? Size.zero)),
+                            child: CustomPaint(painter: _StrokePainter(_strokes, _imageRect(_canvasSize ?? Size.zero))),
                           ),
                         ],
                       ),
