@@ -25,6 +25,11 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 - Fixed Dart switch-case termination by adding explicit break statements.
 - Fixed preview pause behavior so changing motion while paused does not resume playback.
 - Fixed CI static-analysis issue by removing unused _mint constant from lib/main.dart.
+- Added lib/background_editor.dart: local white-paper edge flood fill, adjustable threshold, transparent checkerboard preview, manual erase/restore strokes, undo/redo, and PNG output.
+- Routed camera/gallery selections through the background editor before opening AnimationStudio in lib/main.dart.
+- Added image and path_provider dependencies for local pixel processing and temporary PNG output.
+- Aligned manual brush coordinates to the actual BoxFit.contain image bounds so strokes map to the drawing rather than the surrounding canvas.
+- Added a separate automatic-removal preview action; preview remains local and can be recalculated after changing threshold.
 
 ## Latest commit
 
@@ -35,8 +40,8 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 ## Verification status
 
 - Latest CI run: [Flutter CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596)
-- **PASSED** — run completed successfully. `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload all succeeded.
-- Debug APK artifact: open the Actions run page above and download the artifact named `rasmati-debug-apk`.
+- Baseline commit `6cbc700b400283c401ce9c4b141131a3754a35b4` passed `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and artifact upload in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
+- Background-editor changes are **not yet verified**. The latest verification attempt is [CI run #9](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37853132665); wait for `flutter analyze`, tests, and APK build to finish before calling this stage complete.
 
 ## Known limitations / not implemented yet
 
@@ -47,11 +52,11 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Next steps (in order)
 
-1. Build and automated checks passed for commit `6cbc700b400283c401ce9c4b141131a3754a35b4` in [CI run #7](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37852006596).
-2. Add a safe, usable background-removal workflow with manual correction while preserving the original drawing.
-3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; avoid pretending automatic rigging is reliable before it is implemented and tested.
+1. Verify the background-editor commits with the latest CI run; fix any analyzer, test, or APK-build failures.
+2. Validate background removal on sample drawings with dark lines, pale colors, white interior details, and non-white paper; tune flood-fill behavior and brush size if needed.
+3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; do not claim automatic rigging is reliable before it is implemented and tested.
 4. Implement video export (MP4) and verify on a real Android device.
-5. Add regression tests for import, preview controls, editing, and export; verify privacy/storage behavior.
+5. Add regression tests for import, background cleanup, preview controls, editing, and export; verify privacy/storage behavior.
 6. Only then assess release signing, app icon, permissions, performance, and Play Store readiness.
 
 ## Continuation rules
