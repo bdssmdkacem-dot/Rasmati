@@ -37,8 +37,10 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 ## Latest commit
 
-- Code fix commit: 17f44c9ffee5e74601759d5f72b829532f47fe5f — [Fix unnecessary const warnings](https://github.com/bdssmdkacem-dot/Rasmati/commit/17f44c9ffee5e74601759d5f72b829532f47fe5f)
-- Latest hand-off update commit: 49b7d2f0d60b195a43ee5a19f87dcecb971dcf8a — [Record fix and CI status](https://github.com/bdssmdkacem-dot/Rasmati/commit/49b7d2f0d60b195a43ee5a19f87dcecb971dcf8a)
+- Background-removal testability commit: `1bfe51551bbb590721c6ae1400fa5f06130ad555` — [Add testable removal helper](https://github.com/bdssmdkacem-dot/Rasmati/commit/1bfe51551bbb590721c6ae1400fa5f06130ad555)
+- Regression-test commit: `6d391b3861ed7462c30b86b9c9537df334f064de` — [Add removal tests](https://github.com/bdssmdkacem-dot/Rasmati/commit/6d391b3861ed7462c30b86b9c9537df334f064de)
+- Latest editor/import fix commit: `92eee5150bd8bebf2f95c3cfe09ca02fb9aca540` — [Sort imports](https://github.com/bdssmdkacem-dot/Rasmati/commit/92eee5150bd8bebf2f95c3cfe09ca02fb9aca540)
+- Prior CI/branding fix: `17f44c9ffee5e74601759d5f72b829532f47fe5f` — [Fix unnecessary const warnings](https://github.com/bdssmdkacem-dot/Rasmati/commit/17f44c9ffee5e74601759d5f72b829532f47fe5f)
 
 ## Verification status
 
@@ -52,14 +54,17 @@ This file is the hand-off record for continuing work in a new chat. Update it af
 
 - Motion presets animate the whole image; limbs/body parts are not independently rigged.
 - Background removal and manual edge correction are implemented in code, but require CI completion and real-image/device QA before being considered production-ready.
-- The new SVG brand sources are committed. Android launcher PNGs/resources are generated during CI, so check the latest workflow and APK artifact before claiming the launcher icon is verified in a build.
+- The new SVG brand sources are committed. CI successfully rendered PNGs, ran `flutter_launcher_icons`, built the debug APK, and uploaded the artifact in runs #29 and #30. Physical-device launcher appearance is still unverified.
+- Extracted the edge-connected paper-removal algorithm into `lib/background_removal.dart` so it can be tested independently. `lib/background_editor.dart` now uses the shared helper for both preview and apply paths.
+- Added `test/background_removal_test.dart` regression cases for edge-connected white paper, preservation of enclosed white details, source-image immutability, and threshold sensitivity. CI verification for these new tests is pending.
 - MP4/video export is not implemented; the current UI marks export as not yet available.
 - No commercial release readiness or device QA has been established yet.
 
 ## Next steps (in order)
 
-1. Validate background removal on sample drawings with dark outlines, pale colors, white interior details, and non-white paper; add focused regression tests for edge-connected paper removal and enclosed white details.
-2. Inspect the generated launcher icon on a real Android device and confirm adaptive-icon masking/appearance.
+1. Verify the latest CI after extracting background removal and adding regression tests; fix any analyzer/test/build issues.
+2. Expand image-quality tests with pale drawing strokes and non-white paper samples; test manually on representative child drawings.
+3. Inspect the generated launcher icon on a real Android device and confirm adaptive-icon masking/appearance.
 3. Introduce explicit editable regions / body-part segmentation and a user-controlled rigging workflow; do not claim automatic rigging is reliable before it is implemented and tested.
 4. Implement video export (MP4) and verify on a real Android device.
 5. Add regression tests for import, background cleanup, preview controls, editing, and export; verify privacy/storage behavior.
