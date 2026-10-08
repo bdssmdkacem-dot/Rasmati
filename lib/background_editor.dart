@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 import 'background_removal.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// Local-only paper/background cleanup with a manual erase/restore brush.
 class BackgroundEditor extends StatefulWidget {
