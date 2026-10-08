@@ -133,15 +133,15 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final canvas = _canvasSize;
       if (canvas != null && canvas.width > 0 && canvas.height > 0) {
         for (final stroke in _strokes) {
-          final radiusX = math.max(1, (stroke.radius * width).round());
-          final radiusY = math.max(1, (stroke.radius * height).round());
+          final radiusX = math.max(1, (stroke.radius * width).round()).toInt();
+          final radiusY = math.max(1, (stroke.radius * height).round()).toInt();
           for (final point in stroke.points) {
-            final cx = (point.dx * width).round().clamp(0, width - 1);
-            final cy = (point.dy * height).round().clamp(0, height - 1);
+            final cx = (point.dx * width).round().clamp(0, width - 1).toInt();
+            final cy = (point.dy * height).round().clamp(0, height - 1).toInt();
             final rx = radiusX;
             final ry = radiusY;
-            for (var y = math.max(0, cy - ry); y <= math.min(height - 1, cy + ry); y++) {
-              for (var x = math.max(0, cx - rx); x <= math.min(width - 1, cx + rx); x++) {
+            for (var y = math.max(0, cy - ry).toInt(); y <= math.min(height - 1, cy + ry).toInt(); y++) {
+              for (var x = math.max(0, cx - rx).toInt(); x <= math.min(width - 1, cx + rx).toInt(); x++) {
                 final dx = (x - cx) / rx;
                 final dy = (y - cy) / ry;
                 if (dx * dx + dy * dy > 1) continue;
@@ -258,7 +258,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
   Offset _normalized(Offset point) {
     final size = _canvasSize ?? Size.zero;
     if (size.width == 0 || size.height == 0) return Offset.zero;
-    return Offset((point.dx / size.width).clamp(0.0, 1.0), (point.dy / size.height).clamp(0.0, 1.0));
+    return Offset((point.dx / size.width).clamp(0.0, 1.0).toDouble(), (point.dy / size.height).clamp(0.0, 1.0).toDouble());
   }
 }
 
@@ -272,7 +272,7 @@ class _StrokePainter extends CustomPainter {
       if (stroke.points.isEmpty) continue;
       final paint = Paint()
         ..color = stroke.mode == BrushMode.erase ? const Color(0x667558E8) : const Color(0x6671C99B)
-        ..strokeWidth = math.max(18, size.shortestSide * stroke.radius * 2)
+        ..strokeWidth = math.max(18, size.shortestSide * stroke.radius * 2).toDouble()
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke;
