@@ -16,7 +16,14 @@ jobs:
           channel: stable
           cache: true
       - run: flutter create --platforms=android .
+      - name: Render Rasmati SVG brand assets
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -w 1024 -h 1024 assets/branding/rasmati_icon.svg > assets/branding/rasmati_icon.png
+          rsvg-convert -w 1024 -h 1024 assets/branding/rasmati_foreground.svg > assets/branding/rasmati_foreground.png
       - run: flutter pub get
+      - run: dart run flutter_launcher_icons
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
