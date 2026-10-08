@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+
+import 'background_removal.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Local-only paper/background cleanup with a manual erase/restore brush.
@@ -104,56 +106,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (decoded == null) throw const FormatException('Unsupported image');
       final source = img.bakeOrientation(decoded);
-      final width = source.width;
-      final height = source.height;
-      final count = width * height;
-      final alpha = Uint8List(count)..fillRange(0, count, 255);
-      final queue = Int32List(count);
-      final visited = Uint8List(count);
-      var head = 0;
-      var tail = 0;
-      bool paper(int x, int y) {
-        final p = source.getPixel(x, y);
-        final r = p.r.toDouble();
-        final g = p.g.toDouble();
-        final b = p.b.toDouble();
-        final minimum = math.min(r, math.min(g, b));
-        final maximum = math.max(r, math.max(g, b));
-        return (r + g + b) / 3 >= 224 - _threshold &&
-            maximum - minimum <= 54 + _threshold;
-      }
-      void enqueue(int x, int y) {
-        if (x < 0 || y < 0 || x >= width || y >= height) return;
-        final index = y * width + x;
-        if (visited[index] != 0 || !paper(x, y)) return;
-        visited[index] = 1;
-        queue[tail++] = index;
-      }
-      for (var x = 0; x < width; x++) {
-        enqueue(x, 0);
-        if (height > 1) enqueue(x, height - 1);
-      }
-      for (var y = 1; y < height - 1; y++) {
-        enqueue(0, y);
-        if (width > 1) enqueue(width - 1, y);
-      }
-      while (head < tail) {
-        final index = queue[head++];
-        alpha[index] = 0;
-        final x = index % width;
-        final y = index ~/ width;
-        enqueue(x - 1, y);
-        enqueue(x + 1, y);
-        enqueue(x, y - 1);
-        enqueue(x, y + 1);
-      }
-      final output = img.Image(width: width, height: height, numChannels: 4);
-      for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-          final p = source.getPixel(x, y);
-          output.setPixelRgba(x, y, p.r.toInt(), p.g.toInt(), p.b.toInt(), alpha[y * width + x]);
-        }
-      }
+      final output = removeEdgeConnectedLightPaper(source, threshold: _threshold);
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/rasmati_preview_${DateTime.now().microsecondsSinceEpoch}.png');
       await file.writeAsBytes(img.encodePng(output), flush: true);
@@ -180,55 +133,13 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final width = source.width;
       final height = source.height;
       final count = width * height;
+      final cleaned = _autoRemove
+          ? removeEdgeConnectedLightPaper(source, threshold: _threshold)
+          : source;
       final alpha = Uint8List(count);
-      for (var i = 0; i < count; i++) {
-        alpha[i] = 255;
-      }
-
-      // Flood-fill only paper-like pixels connected to the image edges. This
-      // avoids deleting enclosed white details inside a drawing.
-      if (_autoRemove) {
-        final queue = Int32List(count);
-        var head = 0;
-        var tail = 0;
-        final visited = Uint8List(count);
-        bool paper(int x, int y) {
-          final p = source.getPixel(x, y);
-          final r = p.r.toDouble();
-          final g = p.g.toDouble();
-          final b = p.b.toDouble();
-          final minChannel = math.min(r, math.min(g, b));
-          final maxChannel = math.max(r, math.max(g, b));
-          final brightness = (r + g + b) / 3;
-          return brightness >= 224 - _threshold &&
-              maxChannel - minChannel <= 54 + _threshold;
-        }
-
-        void enqueue(int x, int y) {
-          if (x < 0 || y < 0 || x >= width || y >= height) return;
-          final index = y * width + x;
-          if (visited[index] != 0 || !paper(x, y)) return;
-          visited[index] = 1;
-          queue[tail++] = index;
-        }
-
+      for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
-          enqueue(x, 0);
-          if (height > 1) enqueue(x, height - 1);
-        }
-        for (var y = 1; y < height - 1; y++) {
-          enqueue(0, y);
-          if (width > 1) enqueue(width - 1, y);
-        }
-        while (head < tail) {
-          final index = queue[head++];
-          alpha[index] = 0;
-          final x = index % width;
-          final y = index ~/ width;
-          enqueue(x - 1, y);
-          enqueue(x + 1, y);
-          enqueue(x, y - 1);
-          enqueue(x, y + 1);
+          alpha[y * width + x] = cleaned.getPixel(x, y).a.toInt();
         }
       }
 
