@@ -4,14 +4,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'background_editor.dart';
+import 'branding.dart';
 
 void main() {
   runApp(const RasmatiApp());
 }
 
-const _ink = Color(0xFF253047);
-const _purple = Color(0xFF7558E8);
-const _paper = Color(0xFFFFFBF4);
+const _ink = RasmatiColors.ink;
+const _purple = RasmatiColors.purple;
+const _paper = RasmatiColors.paper;
 
 class RasmatiApp extends StatelessWidget {
   const RasmatiApp({super.key});
@@ -24,7 +25,7 @@ class RasmatiApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: _paper,
-        colorScheme: ColorScheme.fromSeed(seedColor: _purple),
+        colorScheme: ColorScheme.fromSeed(seedColor: _purple).copyWith(secondary: RasmatiColors.mint, tertiary: RasmatiColors.coral, surface: _paper),
         fontFamily: 'Roboto',
         appBarTheme: const AppBarTheme(
           backgroundColor: _paper,
@@ -98,23 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   delegate: SliverChildListDelegate([
                     Row(
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [_purple, Color(0xFF9C7BFF)],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                            ),
-                            borderRadius: BorderRadius.circular(17),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.white,
-                            size: 27,
-                          ),
-                        ),
+                        const RasmatiMark(size: 48),
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Column(
