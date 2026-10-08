@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'background_editor.dart';
 
 void main() {
   runApp(const RasmatiApp());
@@ -59,9 +60,15 @@ class _HomeScreenState extends State<HomeScreen> {
         maxHeight: 2400,
       );
       if (!mounted || image == null) return;
+      final cleanedImage = await Navigator.of(context).push<File>(
+        MaterialPageRoute<File>(
+          builder: (_) => BackgroundEditor(imageFile: File(image.path)),
+        ),
+      );
+      if (!mounted || cleanedImage == null) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => AnimationStudio(imageFile: File(image.path)),
+          builder: (_) => AnimationStudio(imageFile: cleanedImage),
         ),
       );
     } catch (_) {
