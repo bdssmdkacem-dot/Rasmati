@@ -1,0 +1,60 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
+import 'package:rasmati/background_removal.dart';
+
+img.Image _whiteCanvas(int width, int height) {
+  final image = img.Image(width: width, height: height, numChannels: 4);
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      image.setPixelRgba(x, y, 255, 255, 255, 255);
+    }
+  }
+  return image;
+}
+
+void main() {
+  test('removes light paper connected to the edges but preserves dark drawing', () {
+    final source = _whiteCanvas(5, 5);
+    source.setPixelRgba(2, 2, 20, 30, 40, 255);
+
+    final result = removeEdgeConnectedLightPaper(source);
+
+    expect(result.getPixel(0, 0).a, 0);
+    expect(result.getPixel(2, 2).a, 255);
+    expect(result.getPixel(2, 2).r, 20);
+    // The source is immutable.
+    expect(source.getPixel(0, 0).a, 255);
+  });
+
+  test('preserves enclosed white details inside a dark outline', () {
+    final source = _whiteCanvas(7, 7);
+    for (var x = 2; x <= 4; x++) {
+      source.setPixelRgba(x, 2, 0, 0, 0, 255);
+      source.setPixelRgba(x, 4, 0, 0, 0, 255);
+    }
+    source.setPixelRgba(2, 3, 0, 0, 0, 255);
+    source.setPixelRgba(4, 3, 0, 0, 0, 255);
+
+    final result = removeEdgeConnectedLightPaper(source);
+
+    expect(result.getPixel(0, 0).a, 0);
+    expect(result.getPixel(3, 2).a, 255);
+    expect(result.getPixel(3, 3).a, 255);
+    expect(result.getPixel(3, 3).r, 255);
+  });
+
+  test('threshold allows lighter paper tones to be removed', () {
+    final source = _whiteCanvas(3, 3);
+    for (var y = 0; y < 3; y++) {
+      for (var x = 0; x < 3; x++) {
+        source.setPixelRgba(x, y, 215, 215, 215, 255);
+      }
+    }
+
+    final conservative = removeEdgeConnectedLightPaper(source, threshold: 0);
+    final tolerant = removeEdgeConnectedLightPaper(source, threshold: 20);
+
+    expect(conservative.getPixel(1, 1).a, 255);
+    expect(tolerant.getPixel(1, 1).a, 0);
+  });
+}
