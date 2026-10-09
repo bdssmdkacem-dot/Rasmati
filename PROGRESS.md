@@ -157,3 +157,6 @@ After each substantial change:
 
 
 - Follow-up interaction fix: made stroke point lists and rendered stroke lists immutable snapshots per rebuild so `CustomPainter.shouldRepaint` sees in-progress brush changes and undo/redo reliably. Commit: `987e0d7eb69b0f0a867aa341abe5fa8265d5ea69`. Its CI is pending.
+
+
+- CI follow-up caught a second analyzer error: cleanup of the painter accidentally removed `CharacterPartEditor.imageFile`, still needed by the screen. Restored the widget field in commit `9141d43ede8e3bfb9b8f5e3aad55da3fd6cbee30`. Runs #61–#65 exposed the same or related analyzer issue before this correction; new CI is pending. Keep testing against the newest commit rather than treating an older run as verification.
