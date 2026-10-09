@@ -112,3 +112,12 @@ After each substantial change:
 - Verification status at this update: CI for these commits is pending; do not claim the new implementation passes until Actions confirms analyze, tests, and APK build.
 - Limitations: sampled-color flood fill is not an AI segmentation model; it works best for connected, relatively uniform backgrounds. High tolerance can remove similar-colored parts of the drawing. Shadows/gradients and hair-thin strokes still need user correction. Keep original file unchanged and use manual erase/restore for final cleanup.
 - Next: verify CI and fix any failures; inspect the full editor workflow on device, especially preview after sampling a colored region, tolerance changes, undo/redo, brush visibility, and portrait EXIF orientation. Continue background-removal quality work until those checks pass; only then start body-part motion work.
+
+
+## 2026-10-09 follow-up: continuous manual correction strokes
+
+- Confirmed Flutter CI run #50 succeeded for the sampled-color background-removal milestone: [run #50](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37925432129). The workflow completed analysis, tests, and debug APK build; this is code/CI verification, not proof of real-photo quality on a physical phone.
+- Fixed a practical manual-cleanup issue in `lib/background_editor.dart`: a fast finger drag can produce sparse pointer events, so applying only a brush stamp at each event could leave transparent/opaque gaps. The compositor now interpolates between points and stamps at short intervals, for continuous erase/restore strokes in both preview and final PNG.
+- Code commit: `bbbff925ca0b5cd9b89a75c80d3db39dcbe3ca73` — Interpolate background correction brush strokes.
+- Verification for this follow-up commit: pending its own CI run; do not infer that it has passed until GitHub Actions finishes.
+- Current scope remains background-removal reliability only. Next checks: run CI, then exercise quick brush drags, undo/redo, colored and shadowed paper, thin outlines, enclosed pale details, and EXIF-rotated photos on device. Do not begin independent body-part motion until background removal has passed practical quality checks.
