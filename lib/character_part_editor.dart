@@ -105,7 +105,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   void _extendStroke(DragUpdateDetails details, Size size) {
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null || _activePoints == null) return;
-    setState(() => _activePoints!.add(point));
+    setState(() => _activePoints = [..._activePoints!, point]);
   }
 
   void _finishStroke(DragEndDetails details) {
@@ -299,9 +299,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                     imageWidth: _decoded!.width,
                                     imageHeight: _decoded!.height,
                                     parts: _parts,
-                                    strokes: _strokes,
+                                    strokes: List.of(_strokes),
                                     activePart: _selectedPart,
-                                    activePoints: _activePoints,
+                                    activePoints: _activePoints == null ? null : List.of(_activePoints!),
                                     brushRadius: _brushRadius,
                                   ),
                                     ),
