@@ -19,7 +19,12 @@ img.Image removeEdgeConnectedLightPaper(
     return img.Image(width: width, height: height, numChannels: 4);
   }
 
-  final alpha = Uint8List(count)..fillRange(0, count, 255);
+  final alpha = Uint8List(count);
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      alpha[y * width + x] = source.getPixel(x, y).a.toInt();
+    }
+  }
   final removed = Uint8List(count);
   final queue = Int32List(count);
   final visited = Uint8List(count);
@@ -143,7 +148,12 @@ img.Image removeConnectedColorBackground(
   final sg = seed.g.toDouble();
   final sb = seed.b.toDouble();
   final limit = tolerance.clamp(4, 120).toDouble();
-  final alpha = Uint8List(count)..fillRange(0, count, 255);
+  final alpha = Uint8List(count);
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      alpha[y * width + x] = source.getPixel(x, y).a.toInt();
+    }
+  }
   final removed = Uint8List(count);
   final visited = Uint8List(count);
   final queue = Int32List(count);
