@@ -647,8 +647,9 @@ class _AnimationStudioState extends State<AnimationStudio>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1050),
-    )..repeat(reverse: true);
+      // A continuous phase produces smoother, predictable looping motion.
+      duration: const Duration(milliseconds: 1900),
+    )..repeat();
   }
 
   @override
@@ -661,7 +662,7 @@ class _AnimationStudioState extends State<AnimationStudio>
     setState(() => _motion = motion);
     _controller.reset();
     if (_playing) {
-      _controller.repeat(reverse: true);
+      _controller.repeat();
     }
   }
 
@@ -669,42 +670,63 @@ class _AnimationStudioState extends State<AnimationStudio>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final t = _controller.value;
-        final wave = math.sin(t * math.pi * 2);
+        final phase = _controller.value * math.pi * 2;
+        final sway = math.sin(phase);
+        final step = math.sin(phase * 2);
         double dy = 0;
         double dx = 0;
         double angle = 0;
-        double scale = 1;
+        double scaleX = 1;
+        double scaleY = 1;
+        Alignment alignment = Alignment.center;
 
         switch (_motion) {
           case DrawingMotion.bounce:
-            dy = -18 * t;
-            scale = 1 + (0.025 * wave.abs());
+            // Ease the landing with a small squash instead of linear sliding.
+            final lift = math.sin(phase).abs();
+            dy = -25 * lift;
+            scaleX = 1 + 0.025 * (1 - lift);
+            scaleY = 1 - 0.035 * (1 - lift);
+            alignment = Alignment.bottomCenter;
             break;
           case DrawingMotion.walk:
-            dx = 9 * wave;
-            angle = 0.035 * wave;
+            // Whole-drawing walk preview: alternating sway, bob, and tilt.
+            dx = 13 * sway;
+            dy = -4.5 * step.abs();
+            angle = 0.055 * sway;
+            scaleX = 1 + 0.012 * step;
+            alignment = Alignment.bottomCenter;
             break;
           case DrawingMotion.dance:
-            angle = 0.10 * wave;
-            dy = -7 * wave.abs();
+            angle = 0.14 * sway;
+            dx = 5 * math.sin(phase + math.pi / 2);
+            dy = -7 * step.abs();
+            scaleX = 1 + 0.025 * sway;
+            scaleY = 1 - 0.018 * sway;
+            alignment = Alignment.bottomCenter;
             break;
           case DrawingMotion.wave:
-            angle = 0.045 * wave;
-            dx = 3 * wave;
+            // Until body-part rigging exists, this is a gentle greeting sway.
+            angle = 0.065 * sway;
+            dx = 3.5 * sway;
+            scaleY = 1 + 0.008 * math.cos(phase);
             break;
           case DrawingMotion.float:
-            dy = -13 * wave;
-            dx = 4 * math.cos(t * math.pi * 2);
+            dy = -11 * sway;
+            dx = 6 * math.cos(phase);
+            scaleX = 1 + 0.012 * math.sin(phase + 0.5);
+            scaleY = 1 + 0.012 * math.sin(phase + 0.5);
             break;
         }
 
         return Transform.translate(
           offset: Offset(dx, dy),
           child: Transform.rotate(
+            alignment: alignment,
             angle: angle,
-            child: Transform.scale(
-              scale: scale,
+            child: Transform(
+              alignment: alignment,
+              transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
               child: child,
             ),
           ),
@@ -713,6 +735,7 @@ class _AnimationStudioState extends State<AnimationStudio>
       child: Image.file(
         widget.imageFile,
         fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
         errorBuilder: (context, error, stackTrace) => const Icon(
           Icons.broken_image_outlined,
           size: 64,
