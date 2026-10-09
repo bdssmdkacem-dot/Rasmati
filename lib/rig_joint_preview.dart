@@ -115,9 +115,10 @@ class _RigJointPreviewState extends State<RigJointPreview> {
             const SizedBox(height: 8),
             SizedBox(width:double.infinity,child:OutlinedButton.icon(
               onPressed: widget.partIds.isEmpty ? null : () async {
+                final navigator = Navigator.of(context);
                 await _save();
                 if (!mounted) return;
-                await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CharacterMotionPreview(
+                await navigator.push(MaterialPageRoute<void>(builder: (_) => CharacterMotionPreview(
                   folder: widget.folder, partIds: widget.partIds,
                   imageWidth: widget.imageWidth, imageHeight: widget.imageHeight,
                 )));
