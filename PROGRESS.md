@@ -160,3 +160,6 @@ After each substantial change:
 
 
 - CI follow-up caught a second analyzer error: cleanup of the painter accidentally removed `CharacterPartEditor.imageFile`, still needed by the screen. Restored the widget field in commit `9141d43ede8e3bfb9b8f5e3aad55da3fd6cbee30`. Runs #61–#65 exposed the same or related analyzer issue before this correction; new CI is pending. Keep testing against the newest commit rather than treating an older run as verification.
+
+
+- Removed unused brush-radius bookkeeping from the layer exporter in commit `a4dad95eb6e6b9f3427ab2f18cfa56b3c8c0d3c6` before final analyzer verification. CI for this cleanup is pending.
