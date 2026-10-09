@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import 'rig_joint_preview.dart';
 
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
@@ -214,10 +215,16 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       };
       await File('${folder.path}/manifest.json').writeAsString(jsonEncode(manifest));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('حُفظت الأجزاء محليًا (${savedParts.length}) — جاهزة لمرحلة المفاصل.'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => RigJointPreview(
+            folder: folder,
+            partIds: savedParts,
+            imageWidth: width,
+            imageHeight: height,
+          ),
+        ),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
