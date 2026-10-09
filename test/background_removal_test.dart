@@ -47,14 +47,27 @@ void main() {
     final source = _whiteCanvas(3, 3);
     for (var y = 0; y < 3; y++) {
       for (var x = 0; x < 3; x++) {
-        source.setPixelRgba(x, y, 215, 215, 215, 255);
+        source.setPixelRgba(x, y, 220, 220, 220, 255);
       }
     }
 
     final conservative = removeEdgeConnectedLightPaper(source, threshold: 0);
-    final tolerant = removeEdgeConnectedLightPaper(source, threshold: 20);
+    final tolerant = removeEdgeConnectedLightPaper(source, threshold: 40);
 
     expect(conservative.getPixel(1, 1).a, 255);
     expect(tolerant.getPixel(1, 1).a, 0);
+  });
+
+  test('softens a pale antialiased pixel touching the removed paper', () {
+    final source = _whiteCanvas(3, 3);
+    source.setPixelRgba(1, 1, 15, 20, 25, 255);
+    source.setPixelRgba(1, 2, 200, 200, 200, 255);
+
+    final result = removeEdgeConnectedLightPaper(source);
+
+    expect(result.getPixel(0, 0).a, 0);
+    expect(result.getPixel(1, 1).a, 255);
+    expect(result.getPixel(1, 2).a, greaterThan(0));
+    expect(result.getPixel(1, 2).a, lessThan(255));
   });
 }
