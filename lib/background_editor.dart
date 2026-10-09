@@ -33,6 +33,10 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
   final List<_BrushStroke> _redo = [];
   BrushMode _mode = BrushMode.erase;
   double _threshold = 34;
+  double _colorTolerance = 38;
+  Offset? _backgroundSeed;
+  Color? _sampledColor;
+  bool _pickBackgroundMode = false;
   bool _autoRemove = true;
   bool _busy = false;
   bool _previewBusy = false;
@@ -99,6 +103,44 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     setState(() => _strokes.add(_redo.removeLast()));
   }
 
+  img.Image _removeBackground(img.Image source) {
+    final seed = _backgroundSeed;
+    if (seed != null) {
+      return removeConnectedColorBackground(
+        source,
+        seedX: (seed.dx * source.width).round().clamp(0, source.width - 1),
+        seedY: (seed.dy * source.height).round().clamp(0, source.height - 1),
+        tolerance: _colorTolerance,
+      );
+    }
+    return removeEdgeConnectedLightPaper(source, threshold: _threshold);
+  }
+
+  Future<void> _pickBackground(Offset normalized) async {
+    try {
+      final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
+      if (decoded == null || !mounted) return;
+      final source = img.bakeOrientation(decoded);
+      final x = (normalized.dx * source.width).round().clamp(0, source.width - 1);
+      final y = (normalized.dy * source.height).round().clamp(0, source.height - 1);
+      final pixel = source.getPixel(x, y);
+      setState(() {
+        _backgroundSeed = normalized;
+        _sampledColor = Color.fromARGB(
+          255, pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(),
+        );
+        _pickBackgroundMode = false;
+        _previewFile = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذّر اختيار اللون من هذه الصورة.')),
+        );
+      }
+    }
+  }
+
   Future<void> _previewAutomaticRemoval() async {
     if (_previewBusy) return;
     setState(() => _previewBusy = true);
@@ -106,7 +148,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (decoded == null) throw const FormatException('Unsupported image');
       final source = img.bakeOrientation(decoded);
-      final output = removeEdgeConnectedLightPaper(source, threshold: _threshold);
+      final output = _removeBackground(source);
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/rasmati_preview_${DateTime.now().microsecondsSinceEpoch}.png');
       await file.writeAsBytes(img.encodePng(output), flush: true);
@@ -133,9 +175,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final width = source.width;
       final height = source.height;
       final count = width * height;
-      final cleaned = _autoRemove
-          ? removeEdgeConnectedLightPaper(source, threshold: _threshold)
-          : source;
+      final cleaned = _autoRemove ? _removeBackground(source) : source;
       final alpha = Uint8List(count);
       for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
@@ -206,9 +246,14 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
         body: SafeArea(
           child: Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 4, 18, 12),
-                child: Text('أزل لون الورقة تلقائيًا، ثم صحّح النتيجة بفرشاة المسح أو الاستعادة. تتم المعالجة على الجهاز.', style: TextStyle(color: Color(0xFF778095), height: 1.5)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                child: Text(
+                  _pickBackgroundMode
+                      ? 'اضغط على لون الخلفية داخل الصورة لاختياره، ثم عاين الإزالة.'
+                      : 'أزل الورق الفاتح تلقائيًا، أو اختر لون الخلفية لإزالة مساحة متصلة منه. صحّح النتيجة بالفرشاة. كل المعالجة على الجهاز.',
+                  style: const TextStyle(color: Color(0xFF778095), height: 1.5),
+                ),
               ),
               Expanded(
                 child: Padding(
@@ -222,13 +267,26 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
                         children: [
                           const _Checkerboard(),
                           Image.file(_previewFile ?? widget.imageFile, key: ValueKey(_previewFile?.path ?? widget.imageFile.path), fit: BoxFit.contain),
+                          if (_backgroundSeed != null)
+                            Positioned(
+                              left: _imageRect(_canvasSize ?? Size.zero).left + _backgroundSeed!.dx * _imageRect(_canvasSize ?? Size.zero).width - 12,
+                              top: _imageRect(_canvasSize ?? Size.zero).top + _backgroundSeed!.dy * _imageRect(_canvasSize ?? Size.zero).height - 12,
+                              child: IgnorePointer(child: Container(width: 24, height: 24, decoration: BoxDecoration(color: _sampledColor ?? Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]))),
+                            ),
                           GestureDetector(
                             behavior: HitTestBehavior.translucent,
+                            onTapDown: (details) {
+                              if (!_pickBackgroundMode) return;
+                              final point = _normalized(details.localPosition);
+                              if (point != null) _pickBackground(point);
+                            },
                             onPanStart: (details) {
+                              if (_pickBackgroundMode) return;
                               final point = _normalized(details.localPosition);
                               if (point != null) _beginStroke(point);
                             },
                             onPanUpdate: (details) {
+                              if (_pickBackgroundMode) return;
                               final point = _normalized(details.localPosition);
                               if (point != null) _extendStroke(point);
                             },
@@ -251,13 +309,37 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
                       contentPadding: EdgeInsets.zero,
                       value: _autoRemove,
                       onChanged: (value) => setState(() => _autoRemove = value),
-                      title: const Text('إزالة الورقة الفاتحة تلقائيًا', style: TextStyle(fontWeight: FontWeight.w800)),
-                      subtitle: const Text('تبدأ من الحواف لتقليل حذف التفاصيل البيضاء داخل الرسم.'),
+                      title: const Text('الإزالة التلقائية', style: TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: const Text('تُستخدم إزالة الورق الفاتح افتراضيًا، أو لون الخلفية الذي تختاره أدناه.'),
                     ),
-                    Row(children: [
-                      const Text('حساسية الإزالة', style: TextStyle(fontWeight: FontWeight.w800)),
-                      Expanded(child: Slider(value: _threshold, min: 0, max: 55, divisions: 11, label: _threshold.round().toString(), onChanged: (value) => setState(() => _threshold = value))),
-                    ]),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => setState(() {
+                          _pickBackgroundMode = !_pickBackgroundMode;
+                          _previewFile = null;
+                        }),
+                        icon: Icon(_pickBackgroundMode ? Icons.touch_app_rounded : Icons.colorize_rounded),
+                        label: Text(_pickBackgroundMode ? 'اضغط على الخلفية لاختيار اللون…' : 'اختيار لون الخلفية من الصورة'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _pickBackgroundMode ? Colors.white : _purple,
+                          backgroundColor: _pickBackgroundMode ? _purple : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    if (_backgroundSeed == null)
+                      Row(children: [
+                        const Text('حساسية الورق', style: TextStyle(fontWeight: FontWeight.w800)),
+                        Expanded(child: Slider(value: _threshold, min: 0, max: 55, divisions: 11, label: _threshold.round().toString(), onChanged: (value) => setState(() { _threshold = value; _previewFile = null; }))),
+                      ])
+                    else
+                      Row(children: [
+                        Container(width: 22, height: 22, decoration: BoxDecoration(color: _sampledColor, shape: BoxShape.circle, border: Border.all(color: const Color(0xFFD9D5E2)))),
+                        const SizedBox(width: 8),
+                        const Text('تسامح اللون', style: TextStyle(fontWeight: FontWeight.w800)),
+                        Expanded(child: Slider(value: _colorTolerance, min: 4, max: 120, divisions: 29, label: _colorTolerance.round().toString(), onChanged: (value) => setState(() { _colorTolerance = value; _previewFile = null; }))),
+                        IconButton(tooltip: 'إلغاء اللون المختار', onPressed: () => setState(() { _backgroundSeed = null; _sampledColor = null; _previewFile = null; }), icon: const Icon(Icons.close_rounded)),
+                      ]),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
