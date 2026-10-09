@@ -88,3 +88,5 @@ After each substantial change:
 - Commits: background helper `6e8b3d452a3ce607182d96ba05ce7d440b14e1b5`; tests `f1ab77a22d3b624a53e7661a379afe312ca6f79a`; motion `ce550fc4d55ce7fb7e18485ef1b1f5341a0b9b27`.
 - Verification: CI for these changes is pending. Do not treat the improvements as verified until analyze, tests, and APK build succeed.
 - Next: test with real photos on white, cream, colored, and shadowed paper; then design guided character-part segmentation/rigging for genuine limb movement.
+
+- Follow-up static-type safety fix: `8b64a885b92144a8afef05e44f196eaf739ff2de` converts the feathering opacity minimum back to an integer for `Uint8List` assignment. CI remains pending.
