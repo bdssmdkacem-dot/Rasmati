@@ -32,14 +32,6 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   bool _playing = true;
   bool _loading = true;
 
-  static const _labels = <String, String>{
-    'head': 'الرأس',
-    'torso': 'الجذع',
-    'left_arm': 'الذراع الأيسر',
-    'right_arm': 'الذراع الأيمن',
-    'left_leg': 'الساق اليسرى',
-    'right_leg': 'الساق اليمنى',
-  };
 
   @override
   void initState() {
