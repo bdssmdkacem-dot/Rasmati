@@ -95,7 +95,7 @@ img.Image removeEdgeConnectedLightPaper(
           .round()
           .clamp(0, 255)
           .toInt();
-      alpha[index] = math.min(alpha[index], opacity);
+      alpha[index] = math.min(alpha[index], opacity).toInt();
     }
   }
 
