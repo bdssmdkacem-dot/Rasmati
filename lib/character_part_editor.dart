@@ -146,7 +146,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         final mask = masks[stroke.partId]!;
         final radius = math.max(1, (stroke.radius * math.min(width, height)).round());
         radii[stroke.partId] = radius;
-        final points = stroke.points.map((point) => Point<int>(
+        final points = stroke.points.map((point) => math.Point<int>(
           (point.dx * (width - 1)).round(),
           (point.dy * (height - 1)).round(),
         )).toList();
