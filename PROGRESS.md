@@ -1,6 +1,6 @@
 # Development Progress — Rasmati
 
-Last updated: 2026-10-08
+Last updated: 2026-10-09
 
 This file is the hand-off record for continuing work in a new chat. Update it after each meaningful change, fix, or verification.
 
@@ -132,3 +132,11 @@ After each substantial change:
 - Next: wait for analysis, tests, and APK build; address any failures. Then validate with real photos on the phone. No independent body-part motion work until background-removal QA is satisfactory.
 
 - Additional brush geometry correction: `lib/background_editor.dart` now measures the correction-brush radius in pixels using the shorter image side. This aligns the generated mask with the circular brush shown on screen, instead of making the applied brush elliptical on non-square drawings. Commit: `31ef8b966b11629d82b74a4fbb8976c1a91149e6` — Match brush mask to circular on-screen size. Its CI run #56 is queued: [run #56](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37926203587).
+
+
+## 2026-10-09 verified follow-up and next QA step
+
+- User confirmed the build succeeded. Independently verified GitHub Actions run #57 completed successfully for commit `35bc9676b1400095ff8a8061a4e49badf7dddf87`: [run #57](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37926219568). Runs #51–#56 also completed successfully, including analysis, tests, and APK build across the latest implementation commits.
+- Added one more regression test in `test/background_removal_test.dart` to ensure cleanup never increases partially transparent source pixels' alpha. Commit: `6cbabcd13ed34607b39621fe90dd54802127ae69` — Test partial transparency preservation.
+- CI for this newest test commit is pending; verify its workflow before calling it green: [run #58](https://github.com/bdssmdkacem-dot/Rasmati/actions).
+- Next acceptance pass is still background removal only: validate flat and shadowed white/cream paper, colored paper with tolerance changes, thin outlines, enclosed light details, already-transparent/partially transparent pixels, quick manual brush drags, undo/redo, and rotated photos. CI is necessary but not sufficient; do not claim real-world reliability until device/photo testing has been performed.
