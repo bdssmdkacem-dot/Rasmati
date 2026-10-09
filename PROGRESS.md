@@ -173,3 +173,13 @@ After each substantial change:
 - Commits: `73dd47c765ec4c103de9d676a46ac8805f30ca96` (pivot preview) and `a50400bc7aa16cf02aee99b034dd7b4fec20871e` (navigation).
 - This is a first joint-placement/rotation prototype, not yet a full walk cycle. Layer masks are brush-selected, so good limb isolation and correctly placed pivots are necessary. Visual continuity at shoulders/hips and occlusion/overlap handling still need testing.
 - Verify latest CI for phase 2 before declaring success; next improve pivot drag behavior and layer seam handling, then add a controlled first arm-wave motion.
+
+
+## 2026-10-09 phase 3: independent limb-motion preview
+
+- Verified GitHub Actions runs #73, #74, and #75 all completed successfully. These confirm the adjustable pivot screen, automatic navigation into it, and progress documentation build cleanly.
+- Added `lib/character_motion_preview.dart`: local animation preview driven by the saved part PNG layers and normalized `joints.json` pivots. Includes looping wave, walk-cycle swing, and head-nod presets plus play/pause and reset.
+- Connected the pivot screen to the new motion preview with an explicit “اختبار التلويح والمشي” action. Pivot values are saved before opening the preview, and the original drawing remains unchanged.
+- Commits: motion preview `0b8b7a6d33e6e4cf8daf942647b0c912e5e76c5b`; pivot-screen integration `78810b656eccbf421cd2e6e3fd11d00ca48a4930`.
+- Verification for these latest changes is pending; do not call phase 3 green until the newest GitHub Actions run completes analysis, tests, and APK build.
+- Known quality limitation: this first motion player rotates the marked transparent layers around saved pivots. It cannot automatically reconstruct pixels hidden behind an arm or head, so poorly isolated masks may show seams/holes. Next fix any CI issues, then improve joint continuity/overlap and add targeted tests before expanding the walk cycle. Physical-device visual QA is still required.
