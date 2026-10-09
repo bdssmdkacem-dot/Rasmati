@@ -24,3 +24,26 @@ flutter run
 
 ## Privacy
 Rasmati is designed for children. Do not upload drawings or collect personal information without a clear need, appropriate parental consent, and a privacy policy.
+
+
+## Free on-device AI animation
+
+Rasmati now includes an entry point for AI-assisted character detection, skeleton setup,
+and skeletal animation using the open-source Flutter Animated Drawings implementation
+(pinned to commit `f906a50f0fc2c227ff77ba1550c711fa8e73431e`). The inference model runs
+locally on the device; the app does not send drawings to a hosted AI API.
+
+Before building locally, run:
+
+```bash
+flutter pub get
+bash tool/prepare_ai_assets.sh
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+The model and motion files are staged from the pinned dependency rather than duplicated
+in Git. AI quality and device compatibility still require real-phone visual QA; the
+feature should not be considered production-verified from a successful build alone.
+The upstream implementation is MIT-licensed; see its repository and license for notices.
