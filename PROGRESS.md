@@ -187,3 +187,6 @@ After each substantial change:
 
 - CI failure diagnosis for phase 3: runs #76–#78 stopped at `flutter analyze` because `_labels` was declared but never used in `lib/character_motion_preview.dart`. No tests or APK build ran in those workflows because the analyzer step failed first.
 - Removed the unused field in commit `cbde90e2a0d4ebe4c424f5b4a03e228c1ec917e7` — “Fix analyzer failure in motion preview”. Verification for this fix is pending; wait for the new workflow to complete analysis, tests, and APK build before claiming success.
+
+
+- Follow-up verification: CI runs #79 and #80 also failed at `flutter analyze`; after removing `_labels`, the remaining issue was `use_build_context_synchronously` at `lib/rig_joint_preview.dart:120`. Captured the Navigator before awaiting `_save()` in commit `315556464ccb410d53c12d97d226c682e1315158` so no BuildContext is read after the async gap. A fresh CI run must confirm this correction; tests/APK were skipped in the failed runs.
