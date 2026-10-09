@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
 
+  final File imageFile;
 
   @override
   State<CharacterPartEditor> createState() => _CharacterPartEditorState();
