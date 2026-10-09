@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_animated_drawings/app/annotation_page.dart';
 import 'background_editor.dart';
 import 'character_part_editor.dart';
 import 'branding.dart';
@@ -78,6 +79,35 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تعذّر فتح الصورة. حاول مرة أخرى.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _chooseDrawingWithAi(ImageSource source) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final image = await _picker.pickImage(
+        source: source,
+        imageQuality: 95,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (!mounted || image == null) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => AnnotationPage(imagePath: image.path),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر تشغيل التحريك الذكي على هذا الجهاز: $error'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -163,6 +193,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'اختر من المعرض',
                       subtitle: 'استخدم صورة محفوظة',
                       onTap: _busy ? null : () => _chooseDrawing(ImageSource.gallery),
+                    ),
+                    const SizedBox(height: 12),
+                    _SecondaryAction(
+                      icon: Icons.auto_awesome_rounded,
+                      title: 'حرّك بالذكاء الاصطناعي',
+                      subtitle: 'مجاني • يعمل على الهاتف دون رفع الرسمة',
+                      onTap: _busy
+                          ? null
+                          : () => _chooseDrawingWithAi(ImageSource.gallery),
                     ),
                     const SizedBox(height: 26),
                     const Text(
