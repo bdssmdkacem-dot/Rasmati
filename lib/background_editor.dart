@@ -153,8 +153,11 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     }
 
     for (final stroke in _strokes) {
-      final radiusX = math.max(1, (stroke.radius * width).round()).toInt();
-      final radiusY = math.max(1, (stroke.radius * height).round()).toInt();
+      // Brush radius is measured in source-image pixels, using the
+      // shorter image side so the mask matches the circular on-screen brush.
+      final radius = math.max(1, (stroke.radius * math.min(width, height)).round()).toInt();
+      final radiusX = radius;
+      final radiusY = radius;
       void stamp(Offset point) {
         final cx = (point.dx * width).round().clamp(0, width - 1).toInt();
         final cy = (point.dy * height).round().clamp(0, height - 1).toInt();
