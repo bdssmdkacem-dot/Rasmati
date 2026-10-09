@@ -23,6 +23,8 @@ jobs:
           rsvg-convert -w 1024 -h 1024 assets/branding/rasmati_icon.svg > assets/branding/rasmati_icon.png
           rsvg-convert -w 1024 -h 1024 assets/branding/rasmati_foreground.svg > assets/branding/rasmati_foreground.png
       - run: flutter pub get
+      - name: Prepare offline AI model assets
+        run: bash tool/prepare_ai_assets.sh
       - run: dart run flutter_launcher_icons
       - run: flutter analyze
       - run: flutter test
