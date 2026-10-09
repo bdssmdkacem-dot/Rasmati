@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'character_motion_preview.dart';
 
 class RigJointPreview extends StatefulWidget {
   const RigJointPreview({super.key, required this.folder, required this.partIds, required this.imageWidth, required this.imageHeight});
@@ -26,7 +27,7 @@ class _RigJointPreviewState extends State<RigJointPreview> {
   @override
   void initState() {
     super.initState();
-    selected = widget.partIds.first;
+    selected = widget.partIds.isEmpty ? '' : widget.partIds.first;
     for (final id in widget.partIds) { pivots[id] = _defaultPivot(id); }
     _loadPivots();
   }
@@ -111,6 +112,16 @@ class _RigJointPreviewState extends State<RigJointPreview> {
             Row(children: [const Text('زاوية الدوران'), Expanded(child: Slider(min: -80,max: 80,divisions: 80,value: angle,label: '${angle.round()}°',onChanged: (v)=>setState(()=>angle=v))), IconButton(onPressed: ()=>setState(()=>angle=0),icon: const Icon(Icons.restart_alt))]),
             Row(children: [const Text('أفقي'),Expanded(child: Slider(value:pivot.dx,label:'${(pivot.dx*100).round()}%',onChanged:(v)=>setState(()=>pivots[selected]=Offset(v,pivot.dy)))),const Text('عمودي'),Expanded(child:Slider(value:pivot.dy,label:'${(pivot.dy*100).round()}%',onChanged:(v)=>setState(()=>pivots[selected]=Offset(pivot.dx,v))))]),
             SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:saving?null:_save,icon:const Icon(Icons.save),label:Text(saving?'جارٍ الحفظ…':'حفظ نقاط المفاصل'))),
+            const SizedBox(height: 8),
+            SizedBox(width:double.infinity,child:OutlinedButton.icon(
+              onPressed: widget.partIds.isEmpty ? null : () async {
+                await _save();
+                if (!mounted) return;
+                await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => CharacterMotionPreview(
+                  folder: widget.folder, partIds: widget.partIds,
+                  imageWidth: widget.imageWidth, imageHeight: widget.imageHeight,
+                )));
+              }, icon: const Icon(Icons.animation), label: const Text('اختبار التلويح والمشي'))),
           ])),
         ])),
       ),
