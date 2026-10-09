@@ -140,3 +140,14 @@ After each substantial change:
 - Added one more regression test in `test/background_removal_test.dart` to ensure cleanup never increases partially transparent source pixels' alpha. Commit: `6cbabcd13ed34607b39621fe90dd54802127ae69` — Test partial transparency preservation.
 - CI for this newest test commit is pending; verify its workflow before calling it green: [run #58](https://github.com/bdssmdkacem-dot/Rasmati/actions).
 - Next acceptance pass is still background removal only: validate flat and shadowed white/cream paper, colored paper with tolerance changes, thin outlines, enclosed light details, already-transparent/partially transparent pixels, quick manual brush drags, undo/redo, and rotated photos. CI is necessary but not sufficient; do not claim real-world reliability until device/photo testing has been performed.
+
+
+## 2026-10-09 milestone: guided character-part preparation (phase 1)
+
+- The user has tried the app and approved moving from background cleanup to full-character motion, built step by step. Keep the original drawing and its colors/linework; do not present whole-image transforms as independent limb animation.
+- Added `lib/character_part_editor.dart`: an Arabic/RTL guided part-marking screen for head, torso, left/right arms, and left/right legs. It supports per-part colored brush strokes, brush-size control, undo/redo, toggling the source-image preview, and local saving.
+- Saving generates full-canvas-aligned transparent PNG layers for marked parts, a `base.png` with selected pixels removed to avoid drawing ghosts, and a local `manifest.json`. Ownership is deterministic: the first part in the fixed manifest order owns overlapping pixels. Original source file is not modified.
+- Added a button in `lib/main.dart` to open this preparation screen from Animation Studio. Existing whole-image presets remain available as a fallback.
+- Commits: editor `b49cf2af896d49e18fbdee348eeeccabc36fdfb0`; safe source-preview rendering `238f28b95ce31ebe6e5a6194df8ca506f3b3b009`; painter cleanup `721b333a3d24d713072b75b66dbafecbe55bf6f3`; Animation Studio entry point `a2143bea908b98fa91c46205ca7326178cd9bfb7`.
+- CI status at this checkpoint: workflow runs #60–#63 are queued/in progress; no passing result is claimed for the new code yet. Latest run: [run #63](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37940734008).
+- Scope boundary: this is preparation/export of aligned part layers, not yet the jointed animation player. Next: wait for CI and fix any failures; add automated coverage for the rig-mask/layer extraction where practical; then load the saved layers into a rig preview with editable pivots, first proving arm/head rotation before adding walk cycles. Test thin strokes, overlaps, undo/redo, non-square images, and the source file's immutability. MP4 export remains separate.
