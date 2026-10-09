@@ -137,7 +137,6 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       final height = source.height;
       final pixelCount = width * height;
       final ownership = List<String?>.filled(pixelCount, null);
-      final radii = <String, int>{};
       final masks = <String, img.Image>{};
       for (final part in _parts) {
         masks[part.id] = img.Image(width: width, height: height, numChannels: 4);
@@ -146,7 +145,6 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       for (final stroke in _strokes) {
         final mask = masks[stroke.partId]!;
         final radius = math.max(1, (stroke.radius * math.min(width, height)).round());
-        radii[stroke.partId] = radius;
         final points = stroke.points.map((point) => math.Point<int>(
           (point.dx * (width - 1)).round(),
           (point.dy * (height - 1)).round(),
