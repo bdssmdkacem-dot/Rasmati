@@ -99,6 +99,39 @@ void main() {
     expect(source.getPixel(0, 0).a, 255);
   });
 
+  test('preserves existing transparency in enclosed details', () {
+    final source = _whiteCanvas(7, 7);
+    for (var x = 2; x <= 4; x++) {
+      source.setPixelRgba(x, 2, 0, 0, 0, 255);
+      source.setPixelRgba(x, 4, 0, 0, 0, 255);
+    }
+    source.setPixelRgba(2, 3, 0, 0, 0, 255);
+    source.setPixelRgba(4, 3, 0, 0, 0, 255);
+    source.setPixelRgba(3, 3, 255, 255, 255, 0);
+
+    final paperResult = removeEdgeConnectedLightPaper(source);
+    expect(paperResult.getPixel(3, 3).a, 0);
+
+    final colorSource = img.Image(width: 7, height: 7, numChannels: 4);
+    for (var y = 0; y < 7; y++) {
+      for (var x = 0; x < 7; x++) {
+        colorSource.setPixelRgba(x, y, 150, 80, 180, 255);
+      }
+    }
+    for (var x = 2; x <= 4; x++) {
+      colorSource.setPixelRgba(x, 2, 15, 15, 20, 255);
+      colorSource.setPixelRgba(x, 4, 15, 15, 20, 255);
+    }
+    colorSource.setPixelRgba(2, 3, 15, 15, 20, 255);
+    colorSource.setPixelRgba(4, 3, 15, 15, 20, 255);
+    colorSource.setPixelRgba(3, 3, 150, 80, 180, 0);
+
+    final colorResult = removeConnectedColorBackground(
+      colorSource, seedX: 0, seedY: 0, tolerance: 12,
+    );
+    expect(colorResult.getPixel(3, 3).a, 0);
+  });
+
   test('sampled color removal respects tolerance', () {
     final source = _whiteCanvas(3, 3);
     for (var y = 0; y < 3; y++) {
