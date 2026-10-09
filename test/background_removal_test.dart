@@ -70,8 +70,6 @@ void main() {
     expect(result.getPixel(1, 2).a, greaterThan(0));
     expect(result.getPixel(1, 2).a, lessThan(255));
   });
-}
-
 
   test('removes a sampled colored background but preserves enclosed matching color', () {
     final source = img.Image(width: 7, height: 7, numChannels: 4);
@@ -120,3 +118,5 @@ void main() {
     expect(strict.getPixel(2, 2).a, 255);
     expect(tolerant.getPixel(2, 2).a, 0);
   });
+
+}
