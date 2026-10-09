@@ -190,3 +190,13 @@ After each substantial change:
 
 
 - Follow-up verification: CI runs #79 and #80 also failed at `flutter analyze`; after removing `_labels`, the remaining issue was `use_build_context_synchronously` at `lib/rig_joint_preview.dart:120`. Captured the Navigator before awaiting `_save()` in commit `315556464ccb410d53c12d97d226c682e1315158` so no BuildContext is read after the async gap. A fresh CI run must confirm this correction; tests/APK were skipped in the failed runs.
+
+
+## 2026-10-09 — Free local AI animation integration (verification pending)
+
+- Selected the open-source Flutter Animated Drawings implementation rather than a paid hosted API: it uses an ONNX pose model and skeletal animation locally on-device, so children's drawings are not uploaded to a third party.
+- Pinned dependency commit: `f906a50f0fc2c227ff77ba1550c711fa8e73431e` from `konyshevgmbh/animated_drawings_flutter`.
+- Added a home-screen entry point that picks a drawing and opens the AI annotation/skeleton workflow.
+- Added `tool/prepare_ai_assets.sh` to stage the dependency's model and motion configuration assets at the root paths expected by the upstream code, and added the same preparation step to CI.
+- Added local build instructions to README.
+- Important: the upstream screen is a separate annotation/animation flow and its interface may not yet match Rasmati's Arabic styling. This is a real model-backed integration attempt, not a claim that animation quality has passed. CI must confirm dependency resolution, analysis, tests, and APK build; then a physical Android test must check model loading, segmentation, joints, and animation quality. No cloud API or paid service is configured.
