@@ -303,7 +303,6 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                     activePart: _selectedPart,
                                     activePoints: _activePoints,
                                     brushRadius: _brushRadius,
-                                    showOriginal: _showOriginal,
                                   ),
                                     ),
                                   ],
@@ -368,7 +367,6 @@ class _RigCanvasPainter extends CustomPainter {
     required this.brushRadius,
   });
 
-  final File imageFile;
   final int imageWidth;
   final int imageHeight;
   final List<_RigPart> parts;
@@ -382,7 +380,6 @@ class _RigCanvasPainter extends CustomPainter {
     final scale = math.min(size.width / imageWidth, size.height / imageHeight);
     final rect = Rect.fromLTWH((size.width - imageWidth * scale) / 2,
         (size.height - imageHeight * scale) / 2, imageWidth * scale, imageHeight * scale);
-    final paint = Paint()..filterQuality = FilterQuality.high;
     void drawStroke(String partId, List<Offset> points, double radius, {bool active = false}) {
       final part = parts.firstWhere((p) => p.id == partId);
       final p = Paint()
