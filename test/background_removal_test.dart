@@ -152,4 +152,25 @@ void main() {
     expect(tolerant.getPixel(2, 2).a, 0);
   });
 
+  test('does not increase partial source alpha during cleanup', () {
+    final paper = _whiteCanvas(5, 5);
+    paper.setPixelRgba(2, 2, 30, 40, 50, 96);
+    final paperResult = removeEdgeConnectedLightPaper(paper);
+    expect(paperResult.getPixel(2, 2).a, lessThanOrEqualTo(96));
+    expect(paperResult.getPixel(2, 2).a, greaterThan(0));
+
+    final color = img.Image(width: 5, height: 5, numChannels: 4);
+    for (var y = 0; y < 5; y++) {
+      for (var x = 0; x < 5; x++) {
+        color.setPixelRgba(x, y, 140, 90, 170, 255);
+      }
+    }
+    color.setPixelRgba(2, 2, 15, 20, 25, 96);
+    final colorResult = removeConnectedColorBackground(
+      color, seedX: 0, seedY: 0, tolerance: 8,
+    );
+    expect(colorResult.getPixel(2, 2).a, lessThanOrEqualTo(96));
+    expect(colorResult.getPixel(2, 2).a, greaterThan(0));
+  });
+
 }
