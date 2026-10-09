@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'background_editor.dart';
+import 'character_part_editor.dart';
 import 'branding.dart';
 
 void main() {
@@ -981,6 +982,32 @@ class _AnimationStudioState extends State<AnimationStudio>
                       }),
                     ),
                     const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => CharacterPartEditor(
+                                imageFile: widget.imageFile,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.accessibility_new_rounded),
+                        label: const Text('تجهيز أجزاء الشخصية للحركة الحقيقية'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _purple,
+                          minimumSize: const Size.fromHeight(50),
+                          side: const BorderSide(color: Color(0xFFDCD4F7)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          textStyle: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
