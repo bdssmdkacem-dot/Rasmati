@@ -71,3 +71,52 @@ void main() {
     expect(result.getPixel(1, 2).a, lessThan(255));
   });
 }
+
+
+  test('removes a sampled colored background but preserves enclosed matching color', () {
+    final source = img.Image(width: 7, height: 7, numChannels: 4);
+    for (var y = 0; y < 7; y++) {
+      for (var x = 0; x < 7; x++) {
+        source.setPixelRgba(x, y, 150, 80, 180, 255);
+      }
+    }
+    // A dark closed outline isolates a same-colored detail from the backdrop.
+    for (var x = 2; x <= 4; x++) {
+      source.setPixelRgba(x, 2, 15, 15, 20, 255);
+      source.setPixelRgba(x, 4, 15, 15, 20, 255);
+    }
+    source.setPixelRgba(2, 3, 15, 15, 20, 255);
+    source.setPixelRgba(4, 3, 15, 15, 20, 255);
+
+    final result = removeConnectedColorBackground(
+      source,
+      seedX: 0,
+      seedY: 0,
+      tolerance: 12,
+    );
+
+    expect(result.getPixel(0, 0).a, 0);
+    expect(result.getPixel(3, 3).a, 255);
+    expect(result.getPixel(3, 3).r, 150);
+    expect(source.getPixel(0, 0).a, 255);
+  });
+
+  test('sampled color removal respects tolerance', () {
+    final source = _whiteCanvas(3, 3);
+    for (var y = 0; y < 3; y++) {
+      for (var x = 0; x < 3; x++) {
+        source.setPixelRgba(x, y, 180, 90, 150, 255);
+      }
+    }
+    source.setPixelRgba(2, 2, 225, 135, 195, 255);
+
+    final strict = removeConnectedColorBackground(
+      source, seedX: 0, seedY: 0, tolerance: 10,
+    );
+    final tolerant = removeConnectedColorBackground(
+      source, seedX: 0, seedY: 0, tolerance: 80,
+    );
+
+    expect(strict.getPixel(2, 2).a, 255);
+    expect(tolerant.getPixel(2, 2).a, 0);
+  });
