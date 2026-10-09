@@ -121,3 +121,12 @@ After each substantial change:
 - Code commit: `bbbff925ca0b5cd9b89a75c80d3db39dcbe3ca73` — Interpolate background correction brush strokes.
 - Verification for this follow-up commit: pending its own CI run; do not infer that it has passed until GitHub Actions finishes.
 - Current scope remains background-removal reliability only. Next checks: run CI, then exercise quick brush drags, undo/redo, colored and shadowed paper, thin outlines, enclosed pale details, and EXIF-rotated photos on device. Do not begin independent body-part motion until background removal has passed practical quality checks.
+
+
+## 2026-10-09 follow-up: preserve source alpha
+
+- Found and fixed a cutout correctness issue: both automatic paper removal and sampled-color removal previously initialized the output alpha mask as fully opaque. If an imported PNG already contained transparent pixels inside the drawing, cleanup could unintentionally make those pixels opaque. The alpha mask now starts from each source pixel's existing alpha, and removal only reduces it.
+- Added a regression test in `test/background_removal_test.dart` covering already-transparent pixels enclosed within a drawing for both cleanup modes.
+- Commits: brush interpolation `bbbff925ca0b5cd9b89a75c80d3db39dcbe3ca73`; preserve source alpha `296147ec7681b12cc6f9e1eab59a73b69b7aa50c`; transparency regression test `05d4969b1868c943a569413c90ce7dedd8eac54a`.
+- CI status at the time of this note: the previous background-removal baseline run #50 passed; the new brush, alpha-preservation, and regression-test commits have runs #51–#54 queued/in progress and are not yet verified. Track the latest run here: [run #54](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37926148985).
+- Next: wait for analysis, tests, and APK build; address any failures. Then validate with real photos on the phone. No independent body-part motion work until background-removal QA is satisfactory.
