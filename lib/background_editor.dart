@@ -155,7 +155,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     for (final stroke in _strokes) {
       final radiusX = math.max(1, (stroke.radius * width).round()).toInt();
       final radiusY = math.max(1, (stroke.radius * height).round()).toInt();
-      for (final point in stroke.points) {
+      void stamp(Offset point) {
         final cx = (point.dx * width).round().clamp(0, width - 1).toInt();
         final cy = (point.dy * height).round().clamp(0, height - 1).toInt();
         for (var y = math.max(0, cy - radiusY).toInt();
@@ -167,6 +167,31 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
             if (dx * dx + dy * dy > 1) continue;
             alpha[y * width + x] = stroke.mode == BrushMode.erase ? 0 : 255;
           }
+        }
+      }
+
+      if (stroke.points.isEmpty) continue;
+      stamp(stroke.points.first);
+      // Pointer events can be far apart during a quick drag. Interpolate
+      // between them so the exported mask is a continuous stroke, not dots.
+      final spacingX = math.max(1, radiusX * 0.45).toDouble();
+      final spacingY = math.max(1, radiusY * 0.45).toDouble();
+      for (var i = 1; i < stroke.points.length; i++) {
+        final from = stroke.points[i - 1];
+        final to = stroke.points[i];
+        final dxPixels = (to.dx - from.dx) * width;
+        final dyPixels = (to.dy - from.dy) * height;
+        final steps = math.max(
+          1,
+          math.max((dxPixels.abs() / spacingX).ceil(),
+              (dyPixels.abs() / spacingY).ceil()),
+        );
+        for (var step = 1; step <= steps; step++) {
+          final t = step / steps;
+          stamp(Offset(
+            from.dx + (to.dx - from.dx) * t,
+            from.dy + (to.dy - from.dy) * t,
+          ));
         }
       }
     }
