@@ -3,8 +3,11 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-/// Makes light, paper-like pixels transparent only when connected to an image
-/// edge. Enclosed white details remain intact. The input image is not mutated.
+/// Removes edge-connected paper while retaining enclosed light details.
+///
+/// A second pass softens one-pixel, near-neutral antialiasing around the cutout
+/// to reduce the hard white fringe commonly left by photographed drawings.
+/// The source image is never mutated.
 img.Image removeEdgeConnectedLightPaper(
   img.Image source, {
   double threshold = 34,
@@ -12,7 +15,12 @@ img.Image removeEdgeConnectedLightPaper(
   final width = source.width;
   final height = source.height;
   final count = width * height;
+  if (width == 0 || height == 0) {
+    return img.Image(width: width, height: height, numChannels: 4);
+  }
+
   final alpha = Uint8List(count)..fillRange(0, count, 255);
+  final removed = Uint8List(count);
   final queue = Int32List(count);
   final visited = Uint8List(count);
   var head = 0;
@@ -25,8 +33,11 @@ img.Image removeEdgeConnectedLightPaper(
     final b = pixel.b.toDouble();
     final minimum = math.min(r, math.min(g, b));
     final maximum = math.max(r, math.max(g, b));
-    return (r + g + b) / 3 >= 224 - threshold &&
-        maximum - minimum <= 54 + threshold;
+    final brightness = (r + g + b) / 3;
+    final luminanceFloor = 240 - threshold.clamp(0, 55) * 0.76;
+    final colorSpreadLimit = 24 + threshold.clamp(0, 55) * 0.55;
+    return brightness >= luminanceFloor &&
+        maximum - minimum <= colorSpreadLimit;
   }
 
   void enqueue(int x, int y) {
@@ -48,6 +59,7 @@ img.Image removeEdgeConnectedLightPaper(
 
   while (head < tail) {
     final index = queue[head++];
+    removed[index] = 1;
     alpha[index] = 0;
     final x = index % width;
     final y = index ~/ width;
@@ -55,6 +67,36 @@ img.Image removeEdgeConnectedLightPaper(
     enqueue(x + 1, y);
     enqueue(x, y - 1);
     enqueue(x, y + 1);
+  }
+
+  // Feather only pixels directly touching the removed region. This keeps
+  // the algorithm local to the cutout edge and avoids fading pale details
+  // elsewhere in the drawing.
+  for (var y = 0; y < height; y++) {
+    for (var x = 0; x < width; x++) {
+      final index = y * width + x;
+      if (removed[index] != 0) continue;
+      var touchesRemoved = false;
+      if (x > 0 && removed[index - 1] != 0) touchesRemoved = true;
+      if (x + 1 < width && removed[index + 1] != 0) touchesRemoved = true;
+      if (y > 0 && removed[index - width] != 0) touchesRemoved = true;
+      if (y + 1 < height && removed[index + width] != 0) touchesRemoved = true;
+      if (!touchesRemoved) continue;
+
+      final pixel = source.getPixel(x, y);
+      final r = pixel.r.toDouble();
+      final g = pixel.g.toDouble();
+      final b = pixel.b.toDouble();
+      final brightness = (r + g + b) / 3;
+      final spread = math.max(r, math.max(g, b)) -
+          math.min(r, math.min(g, b));
+      if (brightness <= 150 || spread > 48) continue;
+      final opacity = ((255 - brightness) / 105 * 255)
+          .round()
+          .clamp(0, 255)
+          .toInt();
+      alpha[index] = math.min(alpha[index], opacity);
+    }
   }
 
   final output = img.Image(width: width, height: height, numChannels: 4);
