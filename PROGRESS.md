@@ -101,3 +101,14 @@ After each substantial change:
 - Architecture requirement: keep the original drawing untouched; preserve full-canvas alignment for extracted part layers; remove extracted pixels from the base layer to avoid ghosting; keep all processing local. Provide a skip path for drawings that are not characters.
 - Acceptance tests: part masks remain aligned to the original image; overlapping strokes have deterministic ownership; undo/redo does not corrupt masks; empty segmentation safely falls back to whole-image animation; CI passes. MP4 export remains a separate milestone.
 - Status: planning/design only for the guided part editor at this checkpoint; no independent-limb rigging is claimed implemented yet.
+
+
+## 2026-10-09 background-removal quality milestone
+
+- Added `removeConnectedColorBackground` in `lib/background_removal.dart`. The user can sample a background color from the drawing and remove only the connected region within an adjustable RGB-distance tolerance; enclosed matching-color details are retained when bounded by a closed outline. A narrow alpha transition is applied at the cutout edge.
+- Updated `lib/background_editor.dart` with background-color sampling, a visible sampled-color marker, adjustable color tolerance, orientation-corrected sampling coordinates, and a shared brush compositor so erase/restore strokes appear in the generated preview as well as the final PNG.
+- Expanded `test/background_removal_test.dart` with colored-background, enclosed-detail, source-immutability, and tolerance tests.
+- Relevant commits: helper `31c3d1a38944b9c9c58f19335ef86d2f8a027f69`; sampled-color tests `20da445e2e6da8d72462e86baf36a477cae21168` (followed by test-scope syntax fix `a2dada741e6501cfb5b1822bdeda074909a45111`); editor integration `87a0214fa5057d208ebc8b22c6166cb797f54fa0`; orientation/type fix `2d01bdaa9dbf44d0717efa5133d5dbf8187d6b5e`; preview brush integration `60cc5b5fc97bc9516e1f7a4ba4cfa7c9bf8ee9a4`.
+- Verification status at this update: CI for these commits is pending; do not claim the new implementation passes until Actions confirms analyze, tests, and APK build.
+- Limitations: sampled-color flood fill is not an AI segmentation model; it works best for connected, relatively uniform backgrounds. High tolerance can remove similar-colored parts of the drawing. Shadows/gradients and hair-thin strokes still need user correction. Keep original file unchanged and use manual erase/restore for final cleanup.
+- Next: verify CI and fix any failures; inspect the full editor workflow on device, especially preview after sampling a colored region, tolerance changes, undo/redo, brush visibility, and portrait EXIF orientation. Continue background-removal quality work until those checks pass; only then start body-part motion work.
