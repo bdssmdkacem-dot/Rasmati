@@ -78,3 +78,13 @@ After each substantial change:
 - Record exact CI/test/build outcome and link; distinguish pending from passing.
 - Update known limitations and the next concrete step.
 - Never describe an unimplemented feature as working, and do not undo product decisions above without an explicit reason.
+
+
+## 2026-10-09 quality pass
+
+- Updated `lib/background_removal.dart`: stricter default paper detection and a one-pixel soft alpha edge to reduce hard cutout fringes. This is still edge-connected color removal, not full AI segmentation.
+- Updated `test/background_removal_test.dart`: added a regression test for feathered edge pixels and adjusted the threshold test to match the revised sensitivity scale.
+- Updated `lib/main.dart`: continuous 1.9-second motion loop; combined lift, bob, sway, tilt, and subtle squash/stretch for bounce, walk, dance, wave, and float. All presets still animate the complete image rather than independent limbs.
+- Commits: background helper `6e8b3d452a3ce607182d96ba05ce7d440b14e1b5`; tests `f1ab77a22d3b624a53e7661a379afe312ca6f79a`; motion `ce550fc4d55ce7fb7e18485ef1b1f5341a0b9b27`.
+- Verification: CI for these changes is pending. Do not treat the improvements as verified until analyze, tests, and APK build succeed.
+- Next: test with real photos on white, cream, colored, and shadowed paper; then design guided character-part segmentation/rigging for genuine limb movement.
