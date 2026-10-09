@@ -86,7 +86,18 @@ After each substantial change:
 - Updated `test/background_removal_test.dart`: added a regression test for feathered edge pixels and adjusted the threshold test to match the revised sensitivity scale.
 - Updated `lib/main.dart`: continuous 1.9-second motion loop; combined lift, bob, sway, tilt, and subtle squash/stretch for bounce, walk, dance, wave, and float. All presets still animate the complete image rather than independent limbs.
 - Commits: background helper `6e8b3d452a3ce607182d96ba05ce7d440b14e1b5`; tests `f1ab77a22d3b624a53e7661a379afe312ca6f79a`; motion `ce550fc4d55ce7fb7e18485ef1b1f5341a0b9b27`.
-- Verification: CI for these changes is pending. Do not treat the improvements as verified until analyze, tests, and APK build succeed.
+- Verification at the time of the quality-pass commit was pending; this was superseded by the successful CI run recorded below.
 - Next: test with real photos on white, cream, colored, and shadowed paper; then design guided character-part segmentation/rigging for genuine limb movement.
 
-- Follow-up static-type safety fix: `8b64a885b92144a8afef05e44f196eaf739ff2de` converts the feathering opacity minimum back to an integer for `Uint8List` assignment. CI remains pending.
+- Follow-up static-type safety fix: `8b64a885b92144a8afef05e44f196eaf739ff2de` converts the feathering opacity minimum back to an integer for `Uint8List` assignment.
+
+
+## 2026-10-09 CI confirmation and next milestone
+
+- Latest workflow run #42 for commit `015bc4b81e0226300ff985ca1f5882cd47c05d47` completed successfully: [Flutter CI run #42](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37923846341).
+- Workflow run #41 for commit `8b64a885b92144a8afef05e44f196eaf739ff2de` also completed successfully: [Flutter CI run #41](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/37923839929).
+- The successful pipeline runs analysis, tests, debug APK build, and artifact upload. This confirms CI health for the current code; it does not replace visual/device QA of background removal or animation.
+- Next implementation milestone: add a guided, editable character-part workflow. Users should be able to mark head, torso, arms, and legs, undo/redo corrections, preview transparent masks, and save the parts locally. Only after masks are validated should the animation studio rig parts around user-correctable pivots.
+- Architecture requirement: keep the original drawing untouched; preserve full-canvas alignment for extracted part layers; remove extracted pixels from the base layer to avoid ghosting; keep all processing local. Provide a skip path for drawings that are not characters.
+- Acceptance tests: part masks remain aligned to the original image; overlapping strokes have deterministic ownership; undo/redo does not corrupt masks; empty segmentation safely falls back to whole-image animation; CI passes. MP4 export remains a separate milestone.
+- Status: planning/design only for the guided part editor at this checkpoint; no independent-limb rigging is claimed implemented yet.
