@@ -163,3 +163,13 @@ After each substantial change:
 
 
 - Removed unused brush-radius bookkeeping from the layer exporter in commit `a4dad95eb6e6b9f3427ab2f18cfa56b3c8c0d3c6` before final analyzer verification. CI for this cleanup is pending.
+
+
+## 2026-10-09 phase 2: adjustable pivot preview
+
+- User confirmed the latest build succeeded, so continued from the committed phase-1 part preparation.
+- Added `lib/rig_joint_preview.dart`: a preview that composites the saved full-canvas base and transparent part layers, lets the user choose a part, drag its red pivot marker, adjust X/Y with sliders, test rotation, reset angle, and persist pivots to `joints.json`.
+- Saving marked layers now opens the joint preview directly from `lib/character_part_editor.dart`.
+- Commits: `73dd47c765ec4c103de9d676a46ac8805f30ca96` (pivot preview) and `a50400bc7aa16cf02aee99b034dd7b4fec20871e` (navigation).
+- This is a first joint-placement/rotation prototype, not yet a full walk cycle. Layer masks are brush-selected, so good limb isolation and correctly placed pivots are necessary. Visual continuity at shoulders/hips and occlusion/overlap handling still need testing.
+- Verify latest CI for phase 2 before declaring success; next improve pivot drag behavior and layer seam handling, then add a controlled first arm-wave motion.
