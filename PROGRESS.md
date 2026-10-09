@@ -183,3 +183,7 @@ After each substantial change:
 - Commits: motion preview `0b8b7a6d33e6e4cf8daf942647b0c912e5e76c5b`; pivot-screen integration `78810b656eccbf421cd2e6e3fd11d00ca48a4930`.
 - Verification for these latest changes is pending; do not call phase 3 green until the newest GitHub Actions run completes analysis, tests, and APK build.
 - Known quality limitation: this first motion player rotates the marked transparent layers around saved pivots. It cannot automatically reconstruct pixels hidden behind an arm or head, so poorly isolated masks may show seams/holes. Next fix any CI issues, then improve joint continuity/overlap and add targeted tests before expanding the walk cycle. Physical-device visual QA is still required.
+
+
+- CI failure diagnosis for phase 3: runs #76–#78 stopped at `flutter analyze` because `_labels` was declared but never used in `lib/character_motion_preview.dart`. No tests or APK build ran in those workflows because the analyzer step failed first.
+- Removed the unused field in commit `cbde90e2a0d4ebe4c424f5b4a03e228c1ec917e7` — “Fix analyzer failure in motion preview”. Verification for this fix is pending; wait for the new workflow to complete analysis, tests, and APK build before claiming success.
