@@ -55,7 +55,8 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     try {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (mounted && decoded != null) {
-        setState(() => _imageSize = Size(decoded.width.toDouble(), decoded.height.toDouble()));
+        final oriented = img.bakeOrientation(decoded);
+        setState(() => _imageSize = Size(oriented.width.toDouble(), oriented.height.toDouble()));
       }
     } catch (_) {
       // The apply action reports a readable error if the image cannot decode.
@@ -108,8 +109,8 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     if (seed != null) {
       return removeConnectedColorBackground(
         source,
-        seedX: (seed.dx * source.width).round().clamp(0, source.width - 1),
-        seedY: (seed.dy * source.height).round().clamp(0, source.height - 1),
+        seedX: (seed.dx * source.width).round().clamp(0, source.width - 1).toInt(),
+        seedY: (seed.dy * source.height).round().clamp(0, source.height - 1).toInt(),
         tolerance: _colorTolerance,
       );
     }
@@ -121,8 +122,8 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (decoded == null || !mounted) return;
       final source = img.bakeOrientation(decoded);
-      final x = (normalized.dx * source.width).round().clamp(0, source.width - 1);
-      final y = (normalized.dy * source.height).round().clamp(0, source.height - 1);
+      final x = (normalized.dx * source.width).round().clamp(0, source.width - 1).toInt();
+      final y = (normalized.dy * source.height).round().clamp(0, source.height - 1).toInt();
       final pixel = source.getPixel(x, y);
       setState(() {
         _backgroundSeed = normalized;
@@ -148,7 +149,7 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (decoded == null) throw const FormatException('Unsupported image');
       final source = img.bakeOrientation(decoded);
-      final output = _removeBackground(source);
+      final output = _autoRemove ? _removeBackground(source) : source;
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/rasmati_preview_${DateTime.now().microsecondsSinceEpoch}.png');
       await file.writeAsBytes(img.encodePng(output), flush: true);
