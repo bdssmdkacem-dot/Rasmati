@@ -154,3 +154,6 @@ After each substantial change:
 
 
 - CI caught a compile-analysis error in the first editor commit: `Point<int>` was not qualified because `dart:math` is imported as `math`. Fixed it as `math.Point<int>` in commit `7fb3cf076bf1fcb01cf5fa410f606f8ba51442b2`. The initial run #60 failed at `flutter analyze`; the fix's own workflow is pending. Do not mark phase 1 green until a later run completes analysis, tests, and APK build.
+
+
+- Follow-up interaction fix: made stroke point lists and rendered stroke lists immutable snapshots per rebuild so `CustomPainter.shouldRepaint` sees in-progress brush changes and undo/redo reliably. Commit: `987e0d7eb69b0f0a867aa341abe5fa8265d5ea69`. Its CI is pending.
