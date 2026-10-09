@@ -142,6 +142,48 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
     }
   }
 
+  img.Image _applyBrushStrokes(img.Image source, img.Image cleaned) {
+    final width = source.width;
+    final height = source.height;
+    final alpha = Uint8List(width * height);
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        alpha[y * width + x] = cleaned.getPixel(x, y).a.toInt();
+      }
+    }
+
+    for (final stroke in _strokes) {
+      final radiusX = math.max(1, (stroke.radius * width).round()).toInt();
+      final radiusY = math.max(1, (stroke.radius * height).round()).toInt();
+      for (final point in stroke.points) {
+        final cx = (point.dx * width).round().clamp(0, width - 1).toInt();
+        final cy = (point.dy * height).round().clamp(0, height - 1).toInt();
+        for (var y = math.max(0, cy - radiusY).toInt();
+            y <= math.min(height - 1, cy + radiusY).toInt(); y++) {
+          for (var x = math.max(0, cx - radiusX).toInt();
+              x <= math.min(width - 1, cx + radiusX).toInt(); x++) {
+            final dx = (x - cx) / radiusX;
+            final dy = (y - cy) / radiusY;
+            if (dx * dx + dy * dy > 1) continue;
+            alpha[y * width + x] = stroke.mode == BrushMode.erase ? 0 : 255;
+          }
+        }
+      }
+    }
+
+    final output = img.Image(width: width, height: height, numChannels: 4);
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        final pixel = source.getPixel(x, y);
+        output.setPixelRgba(
+          x, y, pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(),
+          alpha[y * width + x],
+        );
+      }
+    }
+    return output;
+  }
+
   Future<void> _previewAutomaticRemoval() async {
     if (_previewBusy) return;
     setState(() => _previewBusy = true);
@@ -149,7 +191,9 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(await widget.imageFile.readAsBytes());
       if (decoded == null) throw const FormatException('Unsupported image');
       final source = img.bakeOrientation(decoded);
-      final output = _autoRemove ? _removeBackground(source) : source;
+      final output = _applyBrushStrokes(
+        source, _autoRemove ? _removeBackground(source) : source,
+      );
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/rasmati_preview_${DateTime.now().microsecondsSinceEpoch}.png');
       await file.writeAsBytes(img.encodePng(output), flush: true);
@@ -173,47 +217,8 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
       final decoded = img.decodeImage(bytes);
       if (decoded == null) throw const FormatException('Unsupported image');
       final source = img.bakeOrientation(decoded);
-      final width = source.width;
-      final height = source.height;
-      final count = width * height;
       final cleaned = _autoRemove ? _removeBackground(source) : source;
-      final alpha = Uint8List(count);
-      for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-          alpha[y * width + x] = cleaned.getPixel(x, y).a.toInt();
-        }
-      }
-
-      // Strokes are normalized to the image area, so edits scale to any image.
-      final canvas = _canvasSize;
-      if (canvas != null && canvas.width > 0 && canvas.height > 0) {
-        for (final stroke in _strokes) {
-          final radiusX = math.max(1, (stroke.radius * width).round()).toInt();
-          final radiusY = math.max(1, (stroke.radius * height).round()).toInt();
-          for (final point in stroke.points) {
-            final cx = (point.dx * width).round().clamp(0, width - 1).toInt();
-            final cy = (point.dy * height).round().clamp(0, height - 1).toInt();
-            final rx = radiusX;
-            final ry = radiusY;
-            for (var y = math.max(0, cy - ry).toInt(); y <= math.min(height - 1, cy + ry).toInt(); y++) {
-              for (var x = math.max(0, cx - rx).toInt(); x <= math.min(width - 1, cx + rx).toInt(); x++) {
-                final dx = (x - cx) / rx;
-                final dy = (y - cy) / ry;
-                if (dx * dx + dy * dy > 1) continue;
-                alpha[y * width + x] = stroke.mode == BrushMode.erase ? 0 : 255;
-              }
-            }
-          }
-        }
-      }
-
-      final output = img.Image(width: width, height: height, numChannels: 4);
-      for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-          final p = source.getPixel(x, y);
-          output.setPixelRgba(x, y, p.r.toInt(), p.g.toInt(), p.b.toInt(), alpha[y * width + x]);
-        }
-      }
+      final output = _applyBrushStrokes(source, cleaned);
       final directory = await getTemporaryDirectory();
       final outFile = File('${directory.path}/rasmati_clean_${DateTime.now().microsecondsSinceEpoch}.png');
       await outFile.writeAsBytes(img.encodePng(output), flush: true);
