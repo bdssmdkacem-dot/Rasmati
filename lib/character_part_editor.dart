@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
 
-  final File imageFile;
 
   @override
   State<CharacterPartEditor> createState() => _CharacterPartEditorState();
@@ -288,9 +287,15 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                 onPanStart: (d) => _startStroke(d, size),
                                 onPanUpdate: (d) => _extendStroke(d, size),
                                 onPanEnd: _finishStroke,
-                                child: CustomPaint(
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    if (_showOriginal)
+                                      Image.file(widget.imageFile, fit: BoxFit.contain)
+                                    else
+                                      const ColoredBox(color: Color(0xFFF4F1FA)),
+                                    CustomPaint(
                                   painter: _RigCanvasPainter(
-                                    imageFile: widget.imageFile,
                                     imageWidth: _decoded!.width,
                                     imageHeight: _decoded!.height,
                                     parts: _parts,
@@ -300,7 +305,8 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                     brushRadius: _brushRadius,
                                     showOriginal: _showOriginal,
                                   ),
-                                  child: const SizedBox.expand(),
+                                    ),
+                                  ],
                                 ),
                               );
                             }),
@@ -353,7 +359,6 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
 
 class _RigCanvasPainter extends CustomPainter {
   _RigCanvasPainter({
-    required this.imageFile,
     required this.imageWidth,
     required this.imageHeight,
     required this.parts,
@@ -361,7 +366,6 @@ class _RigCanvasPainter extends CustomPainter {
     required this.activePart,
     required this.activePoints,
     required this.brushRadius,
-    required this.showOriginal,
   });
 
   final File imageFile;
@@ -372,7 +376,6 @@ class _RigCanvasPainter extends CustomPainter {
   final String activePart;
   final List<Offset>? activePoints;
   final double brushRadius;
-  final bool showOriginal;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -380,15 +383,6 @@ class _RigCanvasPainter extends CustomPainter {
     final rect = Rect.fromLTWH((size.width - imageWidth * scale) / 2,
         (size.height - imageHeight * scale) / 2, imageWidth * scale, imageHeight * scale);
     final paint = Paint()..filterQuality = FilterQuality.high;
-    if (showOriginal) {
-      // Decode once per paint is avoided by keeping the source rendered by a
-      // separate widget in the next phase; this painter uses the image cache.
-      final provider = FileImage(imageFile);
-      final stream = provider.resolve(const ImageConfiguration());
-      stream.addListener(ImageStreamListener((info, _) {
-        canvas.drawImageRect(info.image, Rect.fromLTWH(0, 0, info.image.width.toDouble(), info.image.height.toDouble()), rect, paint);
-      }));
-    }
     void drawStroke(String partId, List<Offset> points, double radius, {bool active = false}) {
       final part = parts.firstWhere((p) => p.id == partId);
       final p = Paint()
@@ -420,6 +414,5 @@ class _RigCanvasPainter extends CustomPainter {
       oldDelegate.strokes != strokes ||
       oldDelegate.activePoints != activePoints ||
       oldDelegate.activePart != activePart ||
-      oldDelegate.brushRadius != brushRadius ||
-      oldDelegate.showOriginal != showOriginal;
+      oldDelegate.brushRadius != brushRadius;
 }
