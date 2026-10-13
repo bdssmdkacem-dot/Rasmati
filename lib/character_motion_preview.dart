@@ -90,6 +90,39 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
     }
   }
 
+  /// Draw rear limbs first, then the torso and front-facing details.
+  /// This gives overlapping hand-painted layers a predictable depth order.
+  List<String> get _orderedPartIds {
+    const depth = <String>[
+      'left_leg', 'right_leg', 'torso', 'left_arm', 'right_arm', 'head',
+    ];
+    final ids = List<String>.of(widget.partIds);
+    ids.sort((a, b) {
+      final ai = depth.indexOf(a);
+      final bi = depth.indexOf(b);
+      return (ai < 0 ? depth.length : ai).compareTo(bi < 0 ? depth.length : bi);
+    });
+    return ids;
+  }
+
+  /// Small coordinated body follow-through keeps the walk from reading as
+  /// six isolated rotations. Offsets are relative to the fitted character.
+  Offset _offsetFor(String id, double phase, Size size) {
+    if (_motion == 'walk') {
+      final bounce = math.sin(phase * 4 * math.pi) * size.height * 0.012;
+      if (id == 'left_leg' || id == 'right_leg') {
+        return Offset(0, -bounce * 0.35);
+      }
+      if (id == 'torso' || id == 'head' || id == 'left_arm' || id == 'right_arm') {
+        return Offset(0, bounce);
+      }
+    }
+    if (_motion == 'wave' && id == 'torso') {
+      return Offset(math.sin(phase * 2 * math.pi) * size.width * 0.003, 0);
+    }
+    return Offset.zero;
+  }
+
   double _angleFor(String id, double phase) {
     final wave = math.sin(phase * 2 * math.pi);
     switch (_motion) {
@@ -188,20 +221,23 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
                                     gaplessPlayback: true,
                                   ),
                                 ),
-                                for (final id in widget.partIds)
+                                for (final id in _orderedPartIds)
                                   Positioned.fromRect(
                                     rect: rect,
-                                    child: Transform.rotate(
-                                      angle: _angleFor(id, phase),
-                                      alignment: Alignment(
-                                        (_pivots[id] ?? _defaultPivot(id)).dx * 2 - 1,
-                                        (_pivots[id] ?? _defaultPivot(id)).dy * 2 - 1,
-                                      ),
-                                      child: Image.file(
-                                        File('${widget.folder.path}/$id.png'),
-                                        fit: BoxFit.fill,
-                                        gaplessPlayback: true,
-                                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                    child: Transform.translate(
+                                      offset: _offsetFor(id, phase, Size(w, h)),
+                                      child: Transform.rotate(
+                                        angle: _angleFor(id, phase),
+                                        alignment: Alignment(
+                                          (_pivots[id] ?? _defaultPivot(id)).dx * 2 - 1,
+                                          (_pivots[id] ?? _defaultPivot(id)).dy * 2 - 1,
+                                        ),
+                                        child: Image.file(
+                                          File('${widget.folder.path}/$id.png'),
+                                          fit: BoxFit.fill,
+                                          gaplessPlayback: true,
+                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                        ),
                                       ),
                                     ),
                                   ),
