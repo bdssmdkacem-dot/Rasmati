@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'motion_choreography.dart';
@@ -32,6 +33,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   String _motion = 'wave';
   bool _playing = true;
   bool _loading = true;
+  String? _loadError;
 
 
   @override
@@ -47,6 +49,64 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   }
 
   Future<void> _loadPivots() async {
+    // Validate the saved rig before rendering. Missing layers must not silently
+    // look like a successful animation with body parts disappearing.
+    try {
+      final requiredFiles = <String>[
+        'base.png',
+        ...widget.partIds.map((id) => '$id.png'),
+      ];
+      for (final name in requiredFiles) {
+        final file = File('${widget.folder.path}/$name');
+        if (!await file.exists() || await file.length() == 0) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'ملف الشخصية مفقود أو فارغ: $name';
+              _loading = false;
+            });
+          }
+          return;
+        }
+
+        // Non-empty files may still be corrupt or use a mismatched canvas.
+        ui.Codec? codec;
+        try {
+          codec = await ui.instantiateImageCodec(await file.readAsBytes());
+          final frame = await codec.getNextFrame();
+          final width = frame.image.width;
+          final height = frame.image.height;
+          frame.image.dispose();
+          if (width != widget.imageWidth || height != widget.imageHeight) {
+            if (mounted) {
+              setState(() {
+                _loadError = 'أبعاد الملف $name لا تطابق أبعاد الرسمة الأصلية (${widget.imageWidth}×${widget.imageHeight}).';
+                _loading = false;
+              });
+            }
+            return;
+          }
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'تعذّر قراءة صورة الشخصية: $name;
+              _loading = false;
+            });
+          }
+          return;
+        } finally {
+          codec?.dispose();
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loadError = 'تعذّر التحقق من ملفات الشخصية المحفوظة.';
+          _loading = false;
+        });
+      }
+      return;
+    }
+
     for (final id in widget.partIds) {
       _pivots[id] = _defaultPivot(id);
     }
@@ -106,7 +166,26 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
         body: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : Column(
+              : _loadError != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.broken_image_outlined, size: 48),
+                            const SizedBox(height: 12),
+                            Text(_loadError!, textAlign: TextAlign.center),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'ارجع إلى تجهيز أجزاء الشخصية وأعد حفظها قبل تجربة الحركة.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
                   children: [
                     const Padding(
                       padding: EdgeInsets.all(12),
