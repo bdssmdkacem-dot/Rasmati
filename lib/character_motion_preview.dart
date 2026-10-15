@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'motion_choreography.dart';
@@ -65,6 +66,36 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
             });
           }
           return;
+        }
+
+        // Non-empty files may still be corrupt or use a mismatched canvas.
+        ui.Codec? codec;
+        try {
+          codec = await ui.instantiateImageCodec(await file.readAsBytes());
+          final frame = await codec.getNextFrame();
+          final width = frame.image.width;
+          final height = frame.image.height;
+          frame.image.dispose();
+          if (width != widget.imageWidth || height != widget.imageHeight) {
+            if (mounted) {
+              setState(() {
+                _loadError = 'أبعاد الملف ' + name + ' لا تطابق أبعاد الرسمة الأصلية (' +
+                    widget.imageWidth.toString() + '×' + widget.imageHeight.toString() + ').';
+                _loading = false;
+              });
+            }
+            return;
+          }
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'تعذّر قراءة صورة الشخصية: ' + name;
+              _loading = false;
+            });
+          }
+          return;
+        } finally {
+          codec?.dispose();
         }
       }
     } catch (_) {
