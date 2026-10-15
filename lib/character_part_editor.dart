@@ -204,6 +204,18 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         masks[part.id] = layer;
       }
 
+      // A rig with only one non-empty layer cannot articulate independently.
+      // Stop here instead of opening the joint editor with a misleading rig.
+      if (savedParts.length < 2) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('حدّد جزأين مختلفين على الأقل قبل حفظ الشخصية.'),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        return;
+      }
+
       final docs = await getApplicationDocumentsDirectory();
       final folder = Directory('${docs.path}/character_rig_${DateTime.now().millisecondsSinceEpoch}');
       await folder.create(recursive: true);
