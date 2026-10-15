@@ -79,8 +79,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
           if (width != widget.imageWidth || height != widget.imageHeight) {
             if (mounted) {
               setState(() {
-                _loadError = 'أبعاد الملف ' + name + ' لا تطابق أبعاد الرسمة الأصلية (' +
-                    widget.imageWidth.toString() + '×' + widget.imageHeight.toString() + ').';
+                _loadError = 'أبعاد الملف $name لا تطابق أبعاد الرسمة الأصلية (${widget.imageWidth}×${widget.imageHeight}).';
                 _loading = false;
               });
             }
@@ -89,7 +88,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
         } catch (_) {
           if (mounted) {
             setState(() {
-              _loadError = 'تعذّر قراءة صورة الشخصية: ' + name;
+              _loadError = 'تعذّر قراءة صورة الشخصية: $name;
               _loading = false;
             });
           }
