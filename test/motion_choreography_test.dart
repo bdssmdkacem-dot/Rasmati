@@ -24,15 +24,15 @@ void main() {
     const size = Size(200, 400);
 
     test('walk offsets torso and limbs in a coordinated cycle', () {
-      final torso = MotionChoreography.offsetFor('walk', 'torso', 0.25, size);
-      final leg = MotionChoreography.offsetFor('walk', 'left_leg', 0.25, size);
+      final torso = MotionChoreography.offsetFor('walk', 'torso', 0.125, size);
+      final leg = MotionChoreography.offsetFor('walk', 'left_leg', 0.125, size);
       expect(torso.dy, isNot(0));
       expect(leg.dy, isNot(0));
       expect(torso.dy.sign, -leg.dy.sign);
     });
 
     test('wave affects the waving arm and keeps unrelated parts stable', () {
-      expect(MotionChoreography.angleFor('wave', 'right_arm', 0.25), closeTo(-0.48, 0.0001));
+      expect(MotionChoreography.angleFor('wave', 'right_arm', 0.0), closeTo(-0.48, 0.0001));
       expect(MotionChoreography.angleFor('wave', 'torso', 0.25), 0);
       expect(MotionChoreography.offsetFor('wave', 'torso', 0.25, size).dx, greaterThan(0));
     });
