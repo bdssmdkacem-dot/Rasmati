@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'character_motion_preview.dart';
+import 'motion_choreography.dart';
 
 class RigJointPreview extends StatefulWidget {
   const RigJointPreview({super.key, required this.folder, required this.partIds, required this.imageWidth, required this.imageHeight});
@@ -95,7 +96,7 @@ class _RigJointPreviewState extends State<RigJointPreview> {
             return Stack(fit: StackFit.expand, children: [
               const ColoredBox(color: Color(0xFFF1F2F6)),
               Positioned.fromRect(rect: rect, child: Image.file(File('${widget.folder.path}/base.png'), fit: BoxFit.fill)),
-              for (final id in widget.partIds)
+              for (final id in MotionChoreography.orderParts(widget.partIds))
                 Positioned.fromRect(rect: rect, child: Transform.rotate(
                   angle: id == selected ? angle * math.pi / 180 : 0,
                   alignment: Alignment((pivots[id] ?? _defaultPivot(id)).dx*2-1, (pivots[id] ?? _defaultPivot(id)).dy*2-1),
