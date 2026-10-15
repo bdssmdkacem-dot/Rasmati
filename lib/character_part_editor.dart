@@ -164,9 +164,10 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         }
       }
 
-      // Deterministic ownership: a pixel belongs to the first part in the
-      // manifest order whose painted mask covers it. All layers keep the
-      // source canvas dimensions so their pixels remain perfectly aligned.
+      // Keep a deterministic owner for removing pixels from the base image,
+      // but preserve painted overlap in every part layer. Shared pixels at
+      // shoulders, elbows, hips and knees help prevent transparent cracks
+      // when two independently animated layers rotate away from each other.
       for (var i = 0; i < pixelCount; i++) {
         for (final part in _parts) {
           if (masks[part.id]!.getPixel(i % width, i ~/ width).a > 0) {
@@ -181,17 +182,22 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       for (final part in _parts) {
         final layer = img.Image(width: width, height: height, numChannels: 4);
         var hasPixels = false;
+        final partMask = masks[part.id]!;
         for (var y = 0; y < height; y++) {
           for (var x = 0; x < width; x++) {
             final index = y * width + x;
+            if (partMask.getPixel(x, y).a == 0) continue;
+            final pixel = source.getPixel(x, y);
+            if (pixel.a.toInt() == 0) continue;
+            // Unlike exclusive ownership, each painted part receives its
+            // own copy of overlap pixels. The original is removed only once.
+            layer.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(),
+                pixel.b.toInt(), pixel.a.toInt());
             if (ownership[index] == part.id) {
-              final pixel = source.getPixel(x, y);
-              layer.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(),
-                  pixel.b.toInt(), pixel.a.toInt());
               base.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(),
                   pixel.b.toInt(), 0);
-              hasPixels = true;
             }
+            hasPixels = true;
           }
         }
         if (hasPixels) savedParts.add(part.id);
