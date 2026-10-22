@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'character_motion_preview.dart';
 import 'motion_choreography.dart';
+import 'rig_geometry.dart';
 
 class RigJointPreview extends StatefulWidget {
   const RigJointPreview({super.key, required this.folder, required this.partIds, required this.imageWidth, required this.imageHeight});
@@ -33,18 +34,7 @@ class _RigJointPreviewState extends State<RigJointPreview> {
     _loadPivots();
   }
 
-  Offset _defaultPivot(String id) {
-    // Coordinates are normalized from the top-left of the full image canvas.
-    // Keep defaults aligned with CharacterMotionPreview for older rigs.
-    switch (id) {
-      case 'head': return const Offset(.5, .27);
-      case 'left_arm': return const Offset(.30, .37);
-      case 'right_arm': return const Offset(.70, .37);
-      case 'left_leg': return const Offset(.43, .68);
-      case 'right_leg': return const Offset(.57, .68);
-      default: return const Offset(.5, .48);
-    }
-  }
+  Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
 
   Future<void> _loadPivots() async {
     try {
