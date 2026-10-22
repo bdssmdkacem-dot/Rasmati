@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rasmati/rig_geometry.dart';
-import 'dart:ui' show Offset;
 
 void main() {
   group('RigGeometry.defaultPivot', () {
