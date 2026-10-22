@@ -135,19 +135,21 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   }
 
   Offset _defaultPivot(String id) {
+    // Coordinates are normalized from the top-left of the full image canvas.
+    // Head/shoulder/hip joints therefore sit above the canvas midpoint.
     switch (id) {
       case 'head':
-        return const Offset(.5, .82);
+        return const Offset(.5, .27);
       case 'left_arm':
-        return const Offset(.24, .28);
+        return const Offset(.30, .37);
       case 'right_arm':
-        return const Offset(.76, .28);
+        return const Offset(.70, .37);
       case 'left_leg':
-        return const Offset(.42, .18);
+        return const Offset(.43, .68);
       case 'right_leg':
-        return const Offset(.58, .18);
+        return const Offset(.57, .68);
       default:
-        return const Offset(.5, .5);
+        return const Offset(.5, .48);
     }
   }
 
