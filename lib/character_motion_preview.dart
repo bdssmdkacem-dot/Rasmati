@@ -88,7 +88,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
         } catch (_) {
           if (mounted) {
             setState(() {
-              _loadError = 'تعذّر قراءة صورة الشخصية: $name;
+              _loadError = 'تعذّر قراءة صورة الشخصية: $name';
               _loading = false;
             });
           }
