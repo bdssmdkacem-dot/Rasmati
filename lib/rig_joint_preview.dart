@@ -36,6 +36,48 @@ class _RigJointPreviewState extends State<RigJointPreview> {
 
   Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
 
+  String? _parentPart(String id) {
+    switch (id) {
+      case 'left_forearm':
+        return 'left_arm';
+      case 'right_forearm':
+        return 'right_arm';
+      case 'left_lower_leg':
+        return 'left_leg';
+      case 'right_lower_leg':
+        return 'right_leg';
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildJointTestLayer(String id) {
+    final pivot = pivots[id] ?? _defaultPivot(id);
+    Widget layer = Image.file(
+      File('${widget.folder.path}/$id.png'),
+      fit: BoxFit.fill,
+      gaplessPlayback: true,
+    );
+    layer = Transform.rotate(
+      angle: id == selected ? angle * math.pi / 180 : 0,
+      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+      child: layer,
+    );
+    final parent = _parentPart(id);
+    if (parent != null && widget.partIds.contains(parent)) {
+      final parentPivot = pivots[parent] ?? _defaultPivot(parent);
+      layer = Transform.rotate(
+        angle: parent == selected ? angle * math.pi / 180 : 0,
+        alignment: Alignment(
+          parentPivot.dx * 2 - 1,
+          parentPivot.dy * 2 - 1,
+        ),
+        child: layer,
+      );
+    }
+    return layer;
+  }
+
   Future<void> _loadPivots() async {
     try {
       final file = File('${widget.folder.path}/joints.json');
@@ -89,11 +131,10 @@ class _RigJointPreviewState extends State<RigJointPreview> {
               const ColoredBox(color: Color(0xFFF1F2F6)),
               Positioned.fromRect(rect: rect, child: Image.file(File('${widget.folder.path}/base.png'), fit: BoxFit.fill)),
               for (final id in MotionChoreography.orderParts(widget.partIds))
-                Positioned.fromRect(rect: rect, child: Transform.rotate(
-                  angle: id == selected ? angle * math.pi / 180 : 0,
-                  alignment: Alignment((pivots[id] ?? _defaultPivot(id)).dx*2-1, (pivots[id] ?? _defaultPivot(id)).dy*2-1),
-                  child: Image.file(File('${widget.folder.path}/$id.png'), fit: BoxFit.fill, gaplessPlayback: true),
-                )),
+                Positioned.fromRect(
+                  rect: rect,
+                  child: _buildJointTestLayer(id),
+                ),
               Positioned(left: rect.left+pivot.dx*rect.width-14, top: rect.top+pivot.dy*rect.height-14,
                 child: GestureDetector(onPanUpdate: (d) => setState(() => pivots[selected] = Offset(
                   (pivot.dx+d.delta.dx/rect.width).clamp(0.0,1.0), (pivot.dy+d.delta.dy/rect.height).clamp(0.0,1.0))),
