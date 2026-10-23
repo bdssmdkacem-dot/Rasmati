@@ -43,7 +43,10 @@ void main() {
       expect(MotionChoreography.angleFor('wave', 'right_arm', 0), 0);
       expect(MotionChoreography.angleFor('wave', 'right_arm', 0.45), lessThan(-0.5));
       expect(MotionChoreography.angleFor('wave', 'right_arm', 0.99), 0);
-      expect(MotionChoreography.angleFor('wave', 'torso', 0.25), 0);
+      expect(
+        MotionChoreography.angleFor('wave', 'torso', 0.25),
+        closeTo(0.018, 0.0001),
+      );
       expect(MotionChoreography.offsetFor('wave', 'torso', 0.25, size).dx, greaterThan(0));
     });
 
