@@ -12,15 +12,15 @@ Rasmati is an Android-first Flutter app that turns children's paper drawings int
 
 ## Current implementation status
 
-The repository contains the Flutter app scaffold, Arabic-first home screen, a paper-background removal workflow, a manually painted part-layer prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality.
+The repository contains the Flutter app scaffold, Arabic-first home screen, paper-background removal, a manually painted articulated-part prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality. The manual rig now distinguishes upper arms from forearms and thighs from lower legs, enabling elbow/knee articulation in addition to shoulder/hip movement.
 
-The simple preview in the general animation studio still applies transforms to the whole image. The manual rig prototype is also limited: painted strokes are used as part masks, so it can leave gaps, cut off hands/head edges, and produce visible seams when parts rotate. Neither limitation should be disguised by extra decorative effects.
+The simple preview in the general animation studio still applies transforms to the whole image. The manual rig remains a prototype, not a commercial-quality rig: painted strokes are still the source of masks, default pivots are approximate, and the pipeline does not reconstruct pixels hidden behind moving parts. It can still leave gaps, cut off hands/head edges, or show seams. Adding lower-arm/lower-leg segments expands articulation but does not, by itself, solve segmentation, occlusion reconstruction, joint continuity, or visual quality.
 
 ## Motion redesign — acceptance criteria
 
 Treat animation quality as a core engineering milestone. Do not mark this complete based only on a successful build.
 
-1. **Character segmentation:** detect head, torso, upper/lower arms and legs (or equivalent articulated parts) from the drawing; provide correction tools for incorrect detections.
+1. **Character segmentation:** detect head, torso, upper/lower arms and legs (plus hands/feet where visible), or equivalent articulated parts, from the drawing; provide correction tools for incorrect detections. The current brush-marking flow is a correction/prototype path, not automatic segmentation.
 2. **Preserve the artwork:** retain original pixel colors and linework. Keep the source image immutable and work on derived layers.
 3. **Joint continuity:** create overlap/underlay or joint-aware reconstruction so rotations do not expose transparent wedges, white cut lines, or missing hands/head. Pivot adjustment alone is not a fix for incomplete masks.
 4. **Coordinated motion:** implement motion profiles for wave, walk, and nod with joint limits, eased timing, body balance, and coordinated limb motion. Avoid applying a single global rotation as a substitute for articulation.
@@ -32,8 +32,8 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 ## Next development order
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
-2. Replace stroke-only part masks with proper segmentation masks plus joint-aware overlap/reconstruction.
-3. Connect corrected masks and pivots to the coordinated motion engine.
+2. Replace stroke-only part masks with reliable segmentation masks plus joint-aware overlap and occlusion reconstruction; keep the current articulated segments as a test harness, not the final quality bar.
+3. Add explicit shoulder, elbow, hip, and knee relationships, validate pivot placement against each drawing, and connect corrected masks to a hierarchical motion engine.
 4. Add regression tests and run `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
 5. Verify the animation visually on an Android device before moving to MP4 export or claiming production readiness.
 
