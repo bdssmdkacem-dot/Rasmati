@@ -35,6 +35,12 @@ class RigGeometry {
   /// this parent so elbows and knees follow shoulder/hip rotation.
   static String? parentPart(String id) {
     switch (id) {
+      case 'head':
+      case 'left_arm':
+      case 'right_arm':
+      case 'left_leg':
+      case 'right_leg':
+        return 'torso';
       case 'left_forearm':
         return 'left_arm';
       case 'right_forearm':
@@ -46,6 +52,19 @@ class RigGeometry {
       default:
         return null;
     }
+  }
+
+  /// Returns the ordered ancestors from the immediate parent to the root.
+  /// The guard prevents a malformed future rig definition from looping forever.
+  static List<String> ancestorsOf(String id) {
+    final result = <String>[];
+    final visited = <String>{id};
+    var parent = parentPart(id);
+    while (parent != null && visited.add(parent)) {
+      result.add(parent);
+      parent = parentPart(parent);
+    }
+    return result;
   }
 
   static bool isNormalized(Offset point) =>
