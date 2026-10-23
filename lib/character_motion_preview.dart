@@ -137,6 +137,53 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
 
   Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
 
+  String? _parentPart(String id) {
+    switch (id) {
+      case 'left_forearm':
+        return 'left_arm';
+      case 'right_forearm':
+        return 'right_arm';
+      case 'left_lower_leg':
+        return 'left_leg';
+      case 'right_lower_leg':
+        return 'right_leg';
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildArticulatedLayer(String id, double phase) {
+    final pivot = _pivots[id] ?? _defaultPivot(id);
+    Widget layer = Image.file(
+      File('${widget.folder.path}/$id.png'),
+      fit: BoxFit.fill,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
+
+    // A lower segment inherits its parent segment's transform. This keeps the
+    // elbow/knee attached to the upper arm/thigh instead of rotating every
+    // full-canvas PNG independently around a stationary image-space pivot.
+    layer = Transform.rotate(
+      angle: MotionChoreography.angleFor(_motion, id, phase),
+      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+      child: layer,
+    );
+    final parent = _parentPart(id);
+    if (parent != null && widget.partIds.contains(parent)) {
+      final parentPivot = _pivots[parent] ?? _defaultPivot(parent);
+      layer = Transform.rotate(
+        angle: MotionChoreography.angleFor(_motion, parent, phase),
+        alignment: Alignment(
+          parentPivot.dx * 2 - 1,
+          parentPivot.dy * 2 - 1,
+        ),
+        child: layer,
+      );
+    }
+    return layer;
+  }
+
   @override
   void dispose() {
     _clock.dispose();
@@ -236,19 +283,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
                                     rect: rect,
                                     child: Transform.translate(
                                       offset: MotionChoreography.offsetFor(_motion, id, phase, Size(w, h)),
-                                      child: Transform.rotate(
-                                        angle: MotionChoreography.angleFor(_motion, id, phase),
-                                        alignment: Alignment(
-                                          (_pivots[id] ?? _defaultPivot(id)).dx * 2 - 1,
-                                          (_pivots[id] ?? _defaultPivot(id)).dy * 2 - 1,
-                                        ),
-                                        child: Image.file(
-                                          File('${widget.folder.path}/$id.png'),
-                                          fit: BoxFit.fill,
-                                          gaplessPlayback: true,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      ),
+                                      child: _buildArticulatedLayer(id, phase),
                                     ),
                                   ),
                               ],
