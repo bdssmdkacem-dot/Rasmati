@@ -212,3 +212,7 @@ After each substantial change:
 - CI verification for the newest code/doc commits is pending. Check the latest Actions run before reporting build status. Do not infer that APK build succeeded from analyzer/tests alone.
 - Device and visual acceptance are not yet done: no representative drawing has been reviewed through the new upper/lower limb workflow, and no physical Android installation/test has been verified. Keep PR #1 in draft and do not merge to `main`.
 - Next engineering step: run the latest CI and fix all failures; then implement a hierarchical rig model (shoulder→elbow→wrist and hip→knee→ankle) and reliable joint/occlusion handling rather than relying on approximate full-canvas pivots. Commercial acceptance requires checking original-art preservation and seam-free movement across multiple real drawings and device screenshots before moving to MP4/export phase.
+
+
+- Follow-up implementation after the articulated-segment expansion: `lib/character_motion_preview.dart` and `lib/rig_joint_preview.dart` now apply a parent upper-arm/thigh transform to the matching forearm/lower-leg layer, so the child segment follows shoulder/hip rotation instead of rotating around a stationary image-space joint. Commits: `46a0013efd718fa36e45c703353efc42b2f91450` and `1ed2629404ea48a0453f9842a698082d6b3eb6f2`. This is a structural improvement, but it still needs CI and visual validation; it does not reconstruct hidden pixels or guarantee seamless joints.
+- README follow-up commit: `8b6390e960ca46d7cd725d39c38a414b6c87315f`.
