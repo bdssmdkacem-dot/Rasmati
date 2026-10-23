@@ -221,3 +221,14 @@ After each substantial change:
 - Hierarchy follow-up: centralized the current parent graph in `RigGeometry.parentPart` and added tests for shoulder→forearm and hip→lower-leg links. The joint editor's segment labels now match the new part palette. Commits: `d107d79e127f01e55e9883ebc8036c23c46dd984`, `608b48e1b8d338ffb75b8a009119095bc4e9ff83`, `75473f53a06a9aadc96726be8dc2cbb83df03249`, `71832ae3573402d1594df7110263cc95982eefbc`, `06a0b043117c937236744bebfa25f4b5169cd753`.
 - Latest CI for these changes is still pending; newest known run: [run #125](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40002689892). The APK artifact is not yet verified for this code.
 - Important remaining gap: this rig still depends on manual full-canvas masks and approximate pivots. Parent-child transforms are now represented for elbows/knees, but robust occlusion repair, adaptive pivot placement, and real-drawing visual/device acceptance remain release blockers.
+
+
+## 2026-10-23 — acceptance contract locked; complete parent transform propagation
+
+- Acceptance gate confirmed with the user: no more treating a local overlap patch or a green build as completion. Do not start the next product phase until the animation system passes visual and Android-device acceptance at a commercial-quality bar.
+- Expanded the rig hierarchy from isolated elbow/knee parent pairs to a torso-rooted skeleton: torso → head, upper arms and thighs; upper arms → forearms; thighs → lower legs.
+- Motion preview now applies each segment's own transform plus the ordered transforms of all ancestors. This means torso sway/bounce is inherited by head, shoulders, hips, elbows and knees. The joint editor's test preview uses the same ancestor graph so testing a torso/upper-arm/thigh rotation affects descendants consistently.
+- Added unit tests for ancestor ordering and complete parent relationships in `test/rig_geometry_test.dart`.
+- Commits: hierarchy `903257783d6b8ae40172b43fec1b69ba331615c1`; motion ancestor propagation `79f83f0ec96731dbc9b8a8e6c5eb54232a2c0c06`; joint-preview ancestor propagation `cc2265914b75a62e078a94dcfe5e7eb8522c4c0f`; hierarchy tests `d8e3dec1bca0704f3f163dfc1e473a560e48963f`.
+- CI for this newest hierarchy code is pending. Earlier run #127 passed `flutter analyze` and `flutter test` and had started `flutter build apk --debug`, but that was for an earlier commit and does not prove the current code builds. Keep APK status unconfirmed until the latest run finishes and artifact upload is present.
+- Known commercial blockers remain: current masks are brush-painted rather than robust semantic segmentation; shared joint pixels can create duplicate/ghost contours; hidden artwork behind a rotating part is not reconstructed; default pivots need per-character fitting; no representative drawing has passed a visual regression review; no physical Android install has been confirmed. These are explicit acceptance blockers, not optional polish.
