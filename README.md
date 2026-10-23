@@ -12,7 +12,7 @@ Rasmati is an Android-first Flutter app that turns children's paper drawings int
 
 ## Current implementation status
 
-The repository contains the Flutter app scaffold, Arabic-first home screen, paper-background removal, a manually painted articulated-part prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality. The manual rig now distinguishes upper arms from forearms and thighs from lower legs, enabling elbow/knee articulation in addition to shoulder/hip movement.
+The repository contains the Flutter app scaffold, Arabic-first home screen, paper-background removal, a manually painted articulated-part prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality. The manual rig now distinguishes upper arms from forearms and thighs from lower legs, with a torso-rooted parent graph so body motion propagates through head, shoulders, elbows, hips and knees. This is an engineering milestone, not evidence that joints are visually seamless.
 
 The simple preview in the general animation studio still applies transforms to the whole image. The manual rig remains a prototype, not a commercial-quality rig: painted strokes are still the source of masks, default pivots are approximate, and the pipeline does not reconstruct pixels hidden behind moving parts. It can still leave gaps, cut off hands/head edges, or show seams. Adding lower-arm/lower-leg segments expands articulation but does not, by itself, solve segmentation, occlusion reconstruction, joint continuity, or visual quality.
 
@@ -33,7 +33,7 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
 2. Replace stroke-only part masks with reliable segmentation masks plus joint-aware overlap and occlusion reconstruction; keep the current articulated segments as a test harness, not the final quality bar.
-3. Complete the hierarchical rig with explicit shoulder, elbow, hip, and knee relationships, validate pivot placement against each drawing, and ensure every child segment follows all parent transforms.
+3. The initial torso-rooted parent graph and ancestor-transform propagation are implemented. Still required: explicit wrist/ankle endpoints, per-drawing pivot fitting, hierarchy interaction tests on actual artwork, and validation that the rendering transform order does not clip or duplicate pixels.
 4. Add regression tests and run `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
 5. Verify the animation visually on an Android device before moving to MP4 export or claiming production readiness.
 
