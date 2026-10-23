@@ -18,12 +18,15 @@ void main() {
 
     test('keeps every default pivot inside normalized canvas coordinates', () {
       for (final id in [
-        'head', 'torso', 'left_arm', 'right_arm', 'left_leg', 'right_leg',
+        'head', 'torso', 'left_arm', 'right_arm', 'left_forearm', 'right_forearm',
+        'left_leg', 'right_leg', 'left_lower_leg', 'right_lower_leg',
       ]) {
         expect(RigGeometry.isNormalized(RigGeometry.defaultPivot(id)), isTrue,
             reason: '$id pivot should be normalized');
       }
       expect(RigGeometry.defaultPivot('torso'), const Offset(.5, .48));
+      expect(RigGeometry.defaultPivot('left_forearm'), const Offset(.28, .45));
+      expect(RigGeometry.defaultPivot('right_lower_leg'), const Offset(.57, .80));
     });
   });
 }
