@@ -41,29 +41,26 @@ class _RigJointPreviewState extends State<RigJointPreview> {
 
 
 
-  Widget _buildJointTestLayer(String id) {
+  Widget _applyJointRotation(String id, Widget child) {
     final pivot = pivots[id] ?? _defaultPivot(id);
+    return Transform.rotate(
+      angle: id == selected ? angle * math.pi / 180 : 0,
+      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+      child: child,
+    );
+  }
+
+  Widget _buildJointTestLayer(String id) {
     Widget layer = Image.file(
       File('${widget.folder.path}/$id.png'),
       fit: BoxFit.fill,
       gaplessPlayback: true,
     );
-    layer = Transform.rotate(
-      angle: id == selected ? angle * math.pi / 180 : 0,
-      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
-      child: layer,
-    );
-    final parent = RigGeometry.parentPart(id);
-    if (parent != null && widget.partIds.contains(parent)) {
-      final parentPivot = pivots[parent] ?? _defaultPivot(parent);
-      layer = Transform.rotate(
-        angle: parent == selected ? angle * math.pi / 180 : 0,
-        alignment: Alignment(
-          parentPivot.dx * 2 - 1,
-          parentPivot.dy * 2 - 1,
-        ),
-        child: layer,
-      );
+    layer = _applyJointRotation(id, layer);
+    // Rotate every descendant with its selected ancestor, so a torso test
+    // moves the complete skeleton and shoulder/hip tests move their children.
+    for (final ancestor in RigGeometry.ancestorsOf(id)) {
+      layer = _applyJointRotation(ancestor, layer);
     }
     return layer;
   }
