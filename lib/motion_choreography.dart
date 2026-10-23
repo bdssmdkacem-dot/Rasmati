@@ -8,7 +8,8 @@ class MotionChoreography {
 
   static List<String> orderParts(Iterable<String> partIds) {
     const depth = <String>[
-      'left_leg', 'right_leg', 'torso', 'left_arm', 'right_arm', 'head',
+      'left_lower_leg', 'right_lower_leg', 'left_leg', 'right_leg',
+      'torso', 'left_arm', 'right_arm', 'left_forearm', 'right_forearm', 'head',
     ];
     final ids = List<String>.of(partIds);
     ids.sort((a, b) {
@@ -45,8 +46,12 @@ class MotionChoreography {
       if (id == 'head') {
         return Offset(stride * size.width * 0.002, -bounce * size.height * 0.006);
       }
-      if (id == 'left_arm' || id == 'right_arm') {
+      if (id == 'left_arm' || id == 'right_arm' ||
+          id == 'left_forearm' || id == 'right_forearm') {
         return Offset(0, -bounce * size.height * 0.002);
+      }
+      if (id == 'left_lower_leg' || id == 'right_lower_leg') {
+        return Offset(0, -bounce * size.height * 0.001);
       }
     }
     if (motion == 'wave' && id == 'torso') {
@@ -74,7 +79,12 @@ class MotionChoreography {
           final oscillation = math.sin((p - 0.25) / 0.48 * 6 * math.pi);
           return -1.02 * hold + 0.22 * oscillation * waving;
         }
+        if (id == 'right_forearm') {
+          final waving = _window(p, 0.25, 0.73, 0.10);
+          return 0.34 * waving + 0.10 * math.sin((p - 0.25) / 0.48 * 6 * math.pi) * waving;
+        }
         if (id == 'left_arm') return 0.045 * math.sin(p * 2 * math.pi);
+        if (id == 'left_forearm') return 0.025 * math.sin(p * 2 * math.pi);
         if (id == 'head') return -0.035 * _window(p, 0.15, 0.75, 0.18);
         if (id == 'torso') return 0.018 * math.sin(p * 2 * math.pi);
         return 0;
@@ -82,6 +92,10 @@ class MotionChoreography {
         final stride = math.sin(p * 2 * math.pi);
         if (id == 'left_arm' || id == 'right_leg') return stride * 0.42;
         if (id == 'right_arm' || id == 'left_leg') return -stride * 0.42;
+        if (id == 'left_forearm') return stride * 0.16;
+        if (id == 'right_forearm') return -stride * 0.16;
+        if (id == 'left_lower_leg') return stride * 0.20;
+        if (id == 'right_lower_leg') return -stride * 0.20;
         if (id == 'head') return -stride * 0.018;
         if (id == 'torso') return stride * 0.012;
         return 0;
