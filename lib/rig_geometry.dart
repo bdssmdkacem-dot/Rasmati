@@ -30,6 +30,24 @@ class RigGeometry {
     }
   }
 
+  /// Parent links for the current articulated 2D skeleton.
+  /// Child transforms are applied in local joint space, then inherited from
+  /// this parent so elbows and knees follow shoulder/hip rotation.
+  static String? parentPart(String id) {
+    switch (id) {
+      case 'left_forearm':
+        return 'left_arm';
+      case 'right_forearm':
+        return 'right_arm';
+      case 'left_lower_leg':
+        return 'left_leg';
+      case 'right_lower_leg':
+        return 'right_leg';
+      default:
+        return null;
+    }
+  }
+
   static bool isNormalized(Offset point) =>
       point.dx >= 0 && point.dx <= 1 && point.dy >= 0 && point.dy <= 1;
 }
