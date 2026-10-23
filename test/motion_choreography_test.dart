@@ -8,9 +8,11 @@ void main() {
     test('puts rear limbs behind torso and head while retaining unknown parts', () {
       expect(
         MotionChoreography.orderParts([
-          'head', 'right_arm', 'unknown', 'torso', 'left_leg', 'left_arm', 'right_leg',
+          'head', 'right_arm', 'unknown', 'torso', 'left_leg', 'left_arm',
+          'right_leg', 'left_forearm', 'right_forearm', 'left_lower_leg', 'right_lower_leg',
         ]),
-        ['left_leg', 'right_leg', 'torso', 'left_arm', 'right_arm', 'head', 'unknown'],
+        ['left_lower_leg', 'right_lower_leg', 'left_leg', 'right_leg', 'torso',
+          'left_arm', 'right_arm', 'left_forearm', 'right_forearm', 'head', 'unknown'],
       );
     });
 
@@ -36,6 +38,11 @@ void main() {
       expect(
         MotionChoreography.angleFor('walk', 'left_leg', 0.25),
         closeTo(-MotionChoreography.angleFor('walk', 'right_leg', 0.25), 0.0001),
+      );
+      expect(MotionChoreography.angleFor('walk', 'left_forearm', 0.25), isNot(0));
+      expect(
+        MotionChoreography.angleFor('walk', 'left_lower_leg', 0.25),
+        closeTo(-MotionChoreography.angleFor('walk', 'right_lower_leg', 0.25), 0.0001),
       );
     });
 
@@ -63,7 +70,8 @@ void main() {
       for (final motion in ['wave', 'walk', 'nod', 'unknown']) {
         for (final phase in [0.0, 0.25, 0.5, 0.75, 1.0]) {
           for (final part in [
-            'head', 'torso', 'left_arm', 'right_arm', 'left_leg', 'right_leg',
+            'head', 'torso', 'left_arm', 'right_arm', 'left_forearm', 'right_forearm',
+            'left_leg', 'right_leg', 'left_lower_leg', 'right_lower_leg',
           ]) {
             expect(MotionChoreography.angleFor(motion, part, phase).isFinite, isTrue);
             final offset = MotionChoreography.offsetFor(motion, part, phase, size);
