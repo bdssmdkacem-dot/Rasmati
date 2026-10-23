@@ -216,3 +216,8 @@ After each substantial change:
 
 - Follow-up implementation after the articulated-segment expansion: `lib/character_motion_preview.dart` and `lib/rig_joint_preview.dart` now apply a parent upper-arm/thigh transform to the matching forearm/lower-leg layer, so the child segment follows shoulder/hip rotation instead of rotating around a stationary image-space joint. Commits: `46a0013efd718fa36e45c703353efc42b2f91450` and `1ed2629404ea48a0453f9842a698082d6b3eb6f2`. This is a structural improvement, but it still needs CI and visual validation; it does not reconstruct hidden pixels or guarantee seamless joints.
 - README follow-up commit: `8b6390e960ca46d7cd725d39c38a414b6c87315f`.
+
+
+- Hierarchy follow-up: centralized the current parent graph in `RigGeometry.parentPart` and added tests for shoulder→forearm and hip→lower-leg links. The joint editor's segment labels now match the new part palette. Commits: `d107d79e127f01e55e9883ebc8036c23c46dd984`, `608b48e1b8d338ffb75b8a009119095bc4e9ff83`, `75473f53a06a9aadc96726be8dc2cbb83df03249`, `71832ae3573402d1594df7110263cc95982eefbc`, `06a0b043117c937236744bebfa25f4b5169cd753`.
+- Latest CI for these changes is still pending; newest known run: [run #125](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40002689892). The APK artifact is not yet verified for this code.
+- Important remaining gap: this rig still depends on manual full-canvas masks and approximate pivots. Parent-child transforms are now represented for elbows/knees, but robust occlusion repair, adaptive pivot placement, and real-drawing visual/device acceptance remain release blockers.
