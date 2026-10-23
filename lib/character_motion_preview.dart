@@ -137,20 +137,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
 
   Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
 
-  String? _parentPart(String id) {
-    switch (id) {
-      case 'left_forearm':
-        return 'left_arm';
-      case 'right_forearm':
-        return 'right_arm';
-      case 'left_lower_leg':
-        return 'left_leg';
-      case 'right_lower_leg':
-        return 'right_leg';
-      default:
-        return null;
-    }
-  }
+
 
   Widget _buildArticulatedLayer(String id, double phase) {
     final pivot = _pivots[id] ?? _defaultPivot(id);
@@ -169,7 +156,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
       alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
       child: layer,
     );
-    final parent = _parentPart(id);
+    final parent = RigGeometry.parentPart(id);
     if (parent != null && widget.partIds.contains(parent)) {
       final parentPivot = _pivots[parent] ?? _defaultPivot(parent);
       layer = Transform.rotate(
