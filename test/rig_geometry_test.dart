@@ -8,8 +8,19 @@ void main() {
       expect(RigGeometry.parentPart('right_forearm'), 'right_arm');
       expect(RigGeometry.parentPart('left_lower_leg'), 'left_leg');
       expect(RigGeometry.parentPart('right_lower_leg'), 'right_leg');
-      expect(RigGeometry.parentPart('head'), isNull);
+      expect(RigGeometry.parentPart('head'), 'torso');
+      expect(RigGeometry.parentPart('left_arm'), 'torso');
+      expect(RigGeometry.parentPart('right_leg'), 'torso');
       expect(RigGeometry.parentPart('torso'), isNull);
+    });
+  });
+
+  group('RigGeometry.ancestorsOf', () {
+    test('returns all parents from the joint to the torso root', () {
+      expect(RigGeometry.ancestorsOf('right_forearm'), ['right_arm', 'torso']);
+      expect(RigGeometry.ancestorsOf('left_lower_leg'), ['left_leg', 'torso']);
+      expect(RigGeometry.ancestorsOf('head'), ['torso']);
+      expect(RigGeometry.ancestorsOf('torso'), isEmpty);
     });
   });
 
