@@ -164,6 +164,51 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         }
       }
 
+      // Expand only stroke endpoints that meet another painted part. This
+      // creates a small shared pixel bridge at shoulders, elbows, hips and
+      // knees without dilating every limb into a visibly oversized silhouette.
+      for (final stroke in _strokes) {
+        if (stroke.points.length < 2) continue;
+        final radius = math.max(1, (stroke.radius * math.min(width, height)).round());
+        final jointRadius = math.max(radius + 1, (radius * 1.75).round());
+        final searchRadius = radius * 3;
+        final endpoints = [stroke.points.first, stroke.points.last];
+        for (final endpoint in endpoints) {
+          final cx = (endpoint.dx * (width - 1)).round();
+          final cy = (endpoint.dy * (height - 1)).round();
+          var meetsAnotherPart = false;
+          for (final other in _parts) {
+            if (other.id == stroke.partId) continue;
+            final otherMask = masks[other.id]!;
+            final minX = math.max(0, cx - searchRadius);
+            final maxX = math.min(width - 1, cx + searchRadius);
+            final minY = math.max(0, cy - searchRadius);
+            final maxY = math.min(height - 1, cy + searchRadius);
+            for (var y = minY; y <= maxY && !meetsAnotherPart; y++) {
+              for (var x = minX; x <= maxX; x++) {
+                final dx = x - cx;
+                final dy = y - cy;
+                if (dx * dx + dy * dy <= searchRadius * searchRadius &&
+                    otherMask.getPixel(x, y).a > 0) {
+                  meetsAnotherPart = true;
+                  break;
+                }
+              }
+            }
+            if (meetsAnotherPart) break;
+          }
+          if (meetsAnotherPart) {
+            img.fillCircle(
+              masks[stroke.partId]!,
+              x: cx,
+              y: cy,
+              radius: jointRadius,
+              color: img.ColorRgba8(255, 255, 255, 255),
+            );
+          }
+        }
+      }
+
       // Keep a deterministic owner for removing pixels from the base image,
       // but preserve painted overlap in every part layer. Shared pixels at
       // shoulders, elbows, hips and knees help prevent transparent cracks
