@@ -139,8 +139,24 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
 
 
 
-  Widget _buildArticulatedLayer(String id, double phase) {
+  Widget _applyPartTransform(
+    String id,
+    double phase,
+    Size size,
+    Widget child,
+  ) {
     final pivot = _pivots[id] ?? _defaultPivot(id);
+    return Transform.translate(
+      offset: MotionChoreography.offsetFor(_motion, id, phase, size),
+      child: Transform.rotate(
+        angle: MotionChoreography.angleFor(_motion, id, phase),
+        alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildArticulatedLayer(String id, double phase, Size size) {
     Widget layer = Image.file(
       File('${widget.folder.path}/$id.png'),
       fit: BoxFit.fill,
@@ -148,25 +164,12 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
     );
 
-    // A lower segment inherits its parent segment's transform. This keeps the
-    // elbow/knee attached to the upper arm/thigh instead of rotating every
-    // full-canvas PNG independently around a stationary image-space pivot.
-    layer = Transform.rotate(
-      angle: MotionChoreography.angleFor(_motion, id, phase),
-      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
-      child: layer,
-    );
-    final parent = RigGeometry.parentPart(id);
-    if (parent != null && widget.partIds.contains(parent)) {
-      final parentPivot = _pivots[parent] ?? _defaultPivot(parent);
-      layer = Transform.rotate(
-        angle: MotionChoreography.angleFor(_motion, parent, phase),
-        alignment: Alignment(
-          parentPivot.dx * 2 - 1,
-          parentPivot.dy * 2 - 1,
-        ),
-        child: layer,
-      );
+    // Build from the selected segment outward through every ancestor. The
+    // torso's sway/bounce now propagates to shoulders, hips, head, elbows and
+    // knees rather than leaving the extremities behind in image space.
+    layer = _applyPartTransform(id, phase, size, layer);
+    for (final ancestor in RigGeometry.ancestorsOf(id)) {
+      layer = _applyPartTransform(ancestor, phase, size, layer);
     }
     return layer;
   }
@@ -268,9 +271,10 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
                                 for (final id in MotionChoreography.orderParts(widget.partIds))
                                   Positioned.fromRect(
                                     rect: rect,
-                                    child: Transform.translate(
-                                      offset: MotionChoreography.offsetFor(_motion, id, phase, Size(w, h)),
-                                      child: _buildArticulatedLayer(id, phase),
+                                    child: _buildArticulatedLayer(
+                                      id,
+                                      phase,
+                                      Size(w, h),
                                     ),
                                   ),
                               ],
