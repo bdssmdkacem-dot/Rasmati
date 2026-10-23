@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'character_motion_preview.dart';
 import 'motion_choreography.dart';
+import 'rig_geometry.dart';
 
 class RigJointPreview extends StatefulWidget {
   const RigJointPreview({super.key, required this.folder, required this.partIds, required this.imageWidth, required this.imageHeight});
@@ -21,8 +22,11 @@ class _RigJointPreviewState extends State<RigJointPreview> {
   double angle = 0;
   bool saving = false;
   static const labels = {
-    'head': 'الرأس', 'torso': 'الجذع', 'left_arm': 'الذراع الأيسر',
-    'right_arm': 'الذراع الأيمن', 'left_leg': 'الساق اليسرى', 'right_leg': 'الساق اليمنى',
+    'head': 'الرأس', 'torso': 'الجذع',
+    'left_arm': 'العضد الأيسر', 'right_arm': 'العضد الأيمن',
+    'left_forearm': 'الساعد الأيسر', 'right_forearm': 'الساعد الأيمن',
+    'left_leg': 'الفخذ الأيسر', 'right_leg': 'الفخذ الأيمن',
+    'left_lower_leg': 'الساق السفلى اليسرى', 'right_lower_leg': 'الساق السفلى اليمنى',
   };
 
   @override
@@ -33,15 +37,32 @@ class _RigJointPreviewState extends State<RigJointPreview> {
     _loadPivots();
   }
 
-  Offset _defaultPivot(String id) {
-    switch (id) {
-      case 'head': return const Offset(.5, .82);
-      case 'left_arm': return const Offset(.24, .28);
-      case 'right_arm': return const Offset(.76, .28);
-      case 'left_leg': return const Offset(.42, .18);
-      case 'right_leg': return const Offset(.58, .18);
-      default: return const Offset(.5, .5);
+  Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
+
+
+
+  Widget _applyJointRotation(String id, Widget child) {
+    final pivot = pivots[id] ?? _defaultPivot(id);
+    return Transform.rotate(
+      angle: id == selected ? angle * math.pi / 180 : 0,
+      alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+      child: child,
+    );
+  }
+
+  Widget _buildJointTestLayer(String id) {
+    Widget layer = Image.file(
+      File('${widget.folder.path}/$id.png'),
+      fit: BoxFit.fill,
+      gaplessPlayback: true,
+    );
+    layer = _applyJointRotation(id, layer);
+    // Rotate every descendant with its selected ancestor, so a torso test
+    // moves the complete skeleton and shoulder/hip tests move their children.
+    for (final ancestor in RigGeometry.ancestorsOf(id)) {
+      layer = _applyJointRotation(ancestor, layer);
     }
+    return layer;
   }
 
   Future<void> _loadPivots() async {
@@ -97,11 +118,10 @@ class _RigJointPreviewState extends State<RigJointPreview> {
               const ColoredBox(color: Color(0xFFF1F2F6)),
               Positioned.fromRect(rect: rect, child: Image.file(File('${widget.folder.path}/base.png'), fit: BoxFit.fill)),
               for (final id in MotionChoreography.orderParts(widget.partIds))
-                Positioned.fromRect(rect: rect, child: Transform.rotate(
-                  angle: id == selected ? angle * math.pi / 180 : 0,
-                  alignment: Alignment((pivots[id] ?? _defaultPivot(id)).dx*2-1, (pivots[id] ?? _defaultPivot(id)).dy*2-1),
-                  child: Image.file(File('${widget.folder.path}/$id.png'), fit: BoxFit.fill, gaplessPlayback: true),
-                )),
+                Positioned.fromRect(
+                  rect: rect,
+                  child: _buildJointTestLayer(id),
+                ),
               Positioned(left: rect.left+pivot.dx*rect.width-14, top: rect.top+pivot.dy*rect.height-14,
                 child: GestureDetector(onPanUpdate: (d) => setState(() => pivots[selected] = Offset(
                   (pivot.dx+d.delta.dx/rect.width).clamp(0.0,1.0), (pivot.dy+d.delta.dy/rect.height).clamp(0.0,1.0))),

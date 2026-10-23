@@ -36,10 +36,14 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   static const _parts = <_RigPart>[
     _RigPart('head', 'الرأس', Color(0xFFE85D75)),
     _RigPart('torso', 'الجذع', Color(0xFF6D5CE8)),
-    _RigPart('left_arm', 'الذراع الأيسر', Color(0xFF2D9CDB)),
-    _RigPart('right_arm', 'الذراع الأيمن', Color(0xFF20A477)),
-    _RigPart('left_leg', 'الساق اليسرى', Color(0xFFE89A32)),
-    _RigPart('right_leg', 'الساق اليمنى', Color(0xFF9B59B6)),
+    _RigPart('left_arm', 'العضد الأيسر', Color(0xFF2D9CDB)),
+    _RigPart('right_arm', 'العضد الأيمن', Color(0xFF20A477)),
+    _RigPart('left_forearm', 'الساعد الأيسر', Color(0xFF56B4E9)),
+    _RigPart('right_forearm', 'الساعد الأيمن', Color(0xFF63C7A3)),
+    _RigPart('left_leg', 'الفخذ الأيسر', Color(0xFFE89A32)),
+    _RigPart('right_leg', 'الفخذ الأيمن', Color(0xFF9B59B6)),
+    _RigPart('left_lower_leg', 'الساق السفلى اليسرى', Color(0xFFF0B65C)),
+    _RigPart('right_lower_leg', 'الساق السفلى اليمنى', Color(0xFFB887D0)),
   ];
 
   final List<_RigStroke> _strokes = [];
@@ -164,6 +168,51 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         }
       }
 
+      // Expand only stroke endpoints that meet another painted part. This
+      // creates a small shared pixel bridge at shoulders, elbows, hips and
+      // knees without dilating every limb into a visibly oversized silhouette.
+      for (final stroke in _strokes) {
+        if (stroke.points.length < 2) continue;
+        final radius = math.max(1, (stroke.radius * math.min(width, height)).round());
+        final jointRadius = math.max(radius + 1, (radius * 1.75).round());
+        final searchRadius = radius * 3;
+        final endpoints = [stroke.points.first, stroke.points.last];
+        for (final endpoint in endpoints) {
+          final cx = (endpoint.dx * (width - 1)).round();
+          final cy = (endpoint.dy * (height - 1)).round();
+          var meetsAnotherPart = false;
+          for (final other in _parts) {
+            if (other.id == stroke.partId) continue;
+            final otherMask = masks[other.id]!;
+            final minX = math.max(0, cx - searchRadius);
+            final maxX = math.min(width - 1, cx + searchRadius);
+            final minY = math.max(0, cy - searchRadius);
+            final maxY = math.min(height - 1, cy + searchRadius);
+            for (var y = minY; y <= maxY && !meetsAnotherPart; y++) {
+              for (var x = minX; x <= maxX; x++) {
+                final dx = x - cx;
+                final dy = y - cy;
+                if (dx * dx + dy * dy <= searchRadius * searchRadius &&
+                    otherMask.getPixel(x, y).a > 0) {
+                  meetsAnotherPart = true;
+                  break;
+                }
+              }
+            }
+            if (meetsAnotherPart) break;
+          }
+          if (meetsAnotherPart) {
+            img.fillCircle(
+              masks[stroke.partId]!,
+              x: cx,
+              y: cy,
+              radius: jointRadius,
+              color: img.ColorRgba8(255, 255, 255, 255),
+            );
+          }
+        }
+      }
+
       // Keep a deterministic owner for removing pixels from the base image,
       // but preserve painted overlap in every part layer. Shared pixels at
       // shoulders, elbows, hips and knees help prevent transparent cracks
@@ -278,7 +327,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                         const Padding(
                           padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
                           child: Text(
-                            'لوّن فوق الجزء الذي تريد تحريكه. استخدم أجزاء منفصلة ولا تمرّر الفرشاة على الخلفية.',
+                            'حدّد كل قطعة على حدة: الرأس، الجذع، العضد والساعد لكل ذراع، والفخذ والساق السفلى لكل رجل. اجعل التحديدات تلتقي قليلًا عند الكوع والركبة، وتجنّب الخلفية.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Color(0xFF697286), height: 1.5),
                           ),

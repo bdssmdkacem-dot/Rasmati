@@ -1,15 +1,18 @@
+import 'dart:ui' show Offset, Size;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rasmati/motion_choreography.dart';
-import 'dart:ui' show Offset, Size;
 
 void main() {
   group('MotionChoreography.orderParts', () {
     test('puts rear limbs behind torso and head while retaining unknown parts', () {
       expect(
         MotionChoreography.orderParts([
-          'head', 'right_arm', 'unknown', 'torso', 'left_leg', 'left_arm', 'right_leg',
+          'head', 'right_arm', 'unknown', 'torso', 'left_leg', 'left_arm',
+          'right_leg', 'left_forearm', 'right_forearm', 'left_lower_leg', 'right_lower_leg',
         ]),
-        ['left_leg', 'right_leg', 'torso', 'left_arm', 'right_arm', 'head', 'unknown'],
+        ['left_lower_leg', 'right_lower_leg', 'left_leg', 'right_leg', 'torso',
+          'left_arm', 'right_arm', 'left_forearm', 'right_forearm', 'head', 'unknown'],
       );
     });
 
@@ -23,25 +26,59 @@ void main() {
   group('MotionChoreography motion curves', () {
     const size = Size(200, 400);
 
-    test('walk offsets torso and limbs in a coordinated cycle', () {
+    test('walk coordinates opposite limb swings with body bounce', () {
       final torso = MotionChoreography.offsetFor('walk', 'torso', 0.125, size);
-      final leg = MotionChoreography.offsetFor('walk', 'left_leg', 0.125, size);
-      expect(torso.dy, isNot(0));
-      expect(leg.dy, isNot(0));
-      expect(torso.dy.sign, -leg.dy.sign);
+      final head = MotionChoreography.offsetFor('walk', 'head', 0.125, size);
+      expect(torso.dy, lessThan(0));
+      expect(head.dy, lessThan(0));
+      expect(
+        MotionChoreography.angleFor('walk', 'left_arm', 0.25),
+        closeTo(-MotionChoreography.angleFor('walk', 'right_arm', 0.25), 0.0001),
+      );
+      expect(
+        MotionChoreography.angleFor('walk', 'left_leg', 0.25),
+        closeTo(-MotionChoreography.angleFor('walk', 'right_leg', 0.25), 0.0001),
+      );
+      expect(MotionChoreography.angleFor('walk', 'left_forearm', 0.25), isNot(0));
+      expect(
+        MotionChoreography.angleFor('walk', 'left_lower_leg', 0.25),
+        closeTo(-MotionChoreography.angleFor('walk', 'right_lower_leg', 0.25), 0.0001),
+      );
     });
 
-    test('wave affects the waving arm and keeps unrelated parts stable', () {
-      expect(MotionChoreography.angleFor('wave', 'right_arm', 0.0), closeTo(-0.48, 0.0001));
-      expect(MotionChoreography.angleFor('wave', 'torso', 0.25), 0);
+    test('wave raises the arm, oscillates during the hold, and returns to rest', () {
+      expect(MotionChoreography.angleFor('wave', 'right_arm', 0), 0);
+      expect(MotionChoreography.angleFor('wave', 'right_arm', 0.45), lessThan(-0.5));
+      expect(MotionChoreography.angleFor('wave', 'right_arm', 0.99), 0);
+      expect(
+        MotionChoreography.angleFor('wave', 'torso', 0.25),
+        closeTo(0.018, 0.0001),
+      );
       expect(MotionChoreography.offsetFor('wave', 'torso', 0.25, size).dx, greaterThan(0));
     });
 
-    test('nod primarily rotates the head and unknown motion is neutral', () {
-      expect(MotionChoreography.angleFor('nod', 'head', 0.25), closeTo(0.12, 0.0001));
+    test('nod is a bounded gesture and unknown motion remains neutral', () {
+      final nod = MotionChoreography.angleFor('nod', 'head', 0.25);
+      expect(nod, greaterThan(0));
+      expect(nod, lessThanOrEqualTo(0.16));
       expect(MotionChoreography.angleFor('nod', 'left_arm', 0.25), 0);
       expect(MotionChoreography.angleFor('unknown', 'head', 0.25), 0);
       expect(MotionChoreography.offsetFor('unknown', 'head', 0.25, size), Offset.zero);
+    });
+
+    test('all motion curves remain finite at cycle boundaries', () {
+      for (final motion in ['wave', 'walk', 'nod', 'unknown']) {
+        for (final phase in [0.0, 0.25, 0.5, 0.75, 1.0]) {
+          for (final part in [
+            'head', 'torso', 'left_arm', 'right_arm', 'left_forearm', 'right_forearm',
+            'left_leg', 'right_leg', 'left_lower_leg', 'right_lower_leg',
+          ]) {
+            expect(MotionChoreography.angleFor(motion, part, phase).isFinite, isTrue);
+            final offset = MotionChoreography.offsetFor(motion, part, phase, size);
+            expect(offset.dx.isFinite && offset.dy.isFinite, isTrue);
+          }
+        }
+      }
     });
   });
 }

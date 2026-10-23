@@ -200,3 +200,35 @@ After each substantial change:
 - Added `tool/prepare_ai_assets.sh` to stage the dependency's model and motion configuration assets at the root paths expected by the upstream code, and added the same preparation step to CI.
 - Added local build instructions to README.
 - Important: the upstream screen is a separate annotation/animation flow and its interface may not yet match Rasmati's Arabic styling. This is a real model-backed integration attempt, not a claim that animation quality has passed. CI must confirm dependency resolution, analysis, tests, and APK build; then a physical Android test must check model loading, segmentation, joints, and animation quality. No cloud API or paid service is configured.
+
+
+## 2026-10-23 — articulated limb expansion; commercial acceptance remains open
+
+- User explicitly rejected treating a small joint-overlap patch as a complete solution. The target is a comprehensive, commercial-quality character-motion system; do not advance to the next product phase until visual and device acceptance is met.
+- Expanded the manual rig part palette so each arm can be marked as upper arm + forearm, and each leg as thigh + lower leg. This allows elbow and knee motion rather than rotating only a single rigid arm/leg. Updated part labels in the editor and pivot editor.
+- Added default elbow/knee pivot locations in `lib/rig_geometry.dart`, lower-segment depth ordering, and coordinated forearm/lower-leg curves in `lib/motion_choreography.dart`. Added unit-test coverage for articulated part ordering, pivots, gait coupling, and finite motion curves.
+- Updated README acceptance language to make clear that articulated segments are a testable intermediate architecture, not a claim of production quality. Remaining foundational work includes dependable segmentation, occlusion reconstruction for pixels hidden behind limbs, per-drawing hierarchical joints, visual regression on representative drawings, and Android-device verification.
+- Commits on `fix/rig-preview-artifact-validation`: part split `695aac13158fb64db8cc8d68b427a62e904ab38d`; elbow/knee pivots `b4414989bd833c6a8d557aa15feb15b70b41360b`; articulated motion `428e61069fd5cae88a578ec9a4b57561fbeb675d`; pivot labels `ba000a3440d36e74d7bceb398b7126020cb84099`; choreography tests `95e2c8d0791d54fd315996cbe993fde383ecde60`; pivot tests `90d96bfbf8615cf642008ade24f11b04ba6bd50e`; forearm wave coordination `96cd962130408c42999e8474f620e7faf6a9dfdb`; README acceptance update `59224d8196d91f90c857ac0944d068360e990c4e`.
+- CI verification for the newest code/doc commits is pending. Check the latest Actions run before reporting build status. Do not infer that APK build succeeded from analyzer/tests alone.
+- Device and visual acceptance are not yet done: no representative drawing has been reviewed through the new upper/lower limb workflow, and no physical Android installation/test has been verified. Keep PR #1 in draft and do not merge to `main`.
+- Next engineering step: run the latest CI and fix all failures; then implement a hierarchical rig model (shoulder→elbow→wrist and hip→knee→ankle) and reliable joint/occlusion handling rather than relying on approximate full-canvas pivots. Commercial acceptance requires checking original-art preservation and seam-free movement across multiple real drawings and device screenshots before moving to MP4/export phase.
+
+
+- Follow-up implementation after the articulated-segment expansion: `lib/character_motion_preview.dart` and `lib/rig_joint_preview.dart` now apply a parent upper-arm/thigh transform to the matching forearm/lower-leg layer, so the child segment follows shoulder/hip rotation instead of rotating around a stationary image-space joint. Commits: `46a0013efd718fa36e45c703353efc42b2f91450` and `1ed2629404ea48a0453f9842a698082d6b3eb6f2`. This is a structural improvement, but it still needs CI and visual validation; it does not reconstruct hidden pixels or guarantee seamless joints.
+- README follow-up commit: `8b6390e960ca46d7cd725d39c38a414b6c87315f`.
+
+
+- Hierarchy follow-up: centralized the current parent graph in `RigGeometry.parentPart` and added tests for shoulder→forearm and hip→lower-leg links. The joint editor's segment labels now match the new part palette. Commits: `d107d79e127f01e55e9883ebc8036c23c46dd984`, `608b48e1b8d338ffb75b8a009119095bc4e9ff83`, `75473f53a06a9aadc96726be8dc2cbb83df03249`, `71832ae3573402d1594df7110263cc95982eefbc`, `06a0b043117c937236744bebfa25f4b5169cd753`.
+- Latest CI for these changes is still pending; newest known run: [run #125](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40002689892). The APK artifact is not yet verified for this code.
+- Important remaining gap: this rig still depends on manual full-canvas masks and approximate pivots. Parent-child transforms are now represented for elbows/knees, but robust occlusion repair, adaptive pivot placement, and real-drawing visual/device acceptance remain release blockers.
+
+
+## 2026-10-23 — acceptance contract locked; complete parent transform propagation
+
+- Acceptance gate confirmed with the user: no more treating a local overlap patch or a green build as completion. Do not start the next product phase until the animation system passes visual and Android-device acceptance at a commercial-quality bar.
+- Expanded the rig hierarchy from isolated elbow/knee parent pairs to a torso-rooted skeleton: torso → head, upper arms and thighs; upper arms → forearms; thighs → lower legs.
+- Motion preview now applies each segment's own transform plus the ordered transforms of all ancestors. This means torso sway/bounce is inherited by head, shoulders, hips, elbows and knees. The joint editor's test preview uses the same ancestor graph so testing a torso/upper-arm/thigh rotation affects descendants consistently.
+- Added unit tests for ancestor ordering and complete parent relationships in `test/rig_geometry_test.dart`.
+- Commits: hierarchy `903257783d6b8ae40172b43fec1b69ba331615c1`; motion ancestor propagation `79f83f0ec96731dbc9b8a8e6c5eb54232a2c0c06`; joint-preview ancestor propagation `cc2265914b75a62e078a94dcfe5e7eb8522c4c0f`; hierarchy tests `d8e3dec1bca0704f3f163dfc1e473a560e48963f`.
+- CI for this newest hierarchy code is pending. Earlier run #127 passed `flutter analyze` and `flutter test` and had started `flutter build apk --debug`, but that was for an earlier commit and does not prove the current code builds. Keep APK status unconfirmed until the latest run finishes and artifact upload is present.
+- Known commercial blockers remain: current masks are brush-painted rather than robust semantic segmentation; shared joint pixels can create duplicate/ghost contours; hidden artwork behind a rotating part is not reconstructed; default pivots need per-character fitting; no representative drawing has passed a visual regression review; no physical Android install has been confirmed. These are explicit acceptance blockers, not optional polish.
