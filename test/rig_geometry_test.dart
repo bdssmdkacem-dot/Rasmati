@@ -2,6 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rasmati/rig_geometry.dart';
 
 void main() {
+  group('RigGeometry.parentPart', () {
+    test('connects each forearm to its upper arm and each lower leg to its thigh', () {
+      expect(RigGeometry.parentPart('left_forearm'), 'left_arm');
+      expect(RigGeometry.parentPart('right_forearm'), 'right_arm');
+      expect(RigGeometry.parentPart('left_lower_leg'), 'left_leg');
+      expect(RigGeometry.parentPart('right_lower_leg'), 'right_leg');
+      expect(RigGeometry.parentPart('head'), isNull);
+      expect(RigGeometry.parentPart('torso'), isNull);
+    });
+  });
+
   group('RigGeometry.defaultPivot', () {
     test('places default head, shoulders, and hips in top-to-bottom order', () {
       final head = RigGeometry.defaultPivot('head');
