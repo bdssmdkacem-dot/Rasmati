@@ -22,8 +22,11 @@ class _RigJointPreviewState extends State<RigJointPreview> {
   double angle = 0;
   bool saving = false;
   static const labels = {
-    'head': 'الرأس', 'torso': 'الجذع', 'left_arm': 'الذراع الأيسر',
-    'right_arm': 'الذراع الأيمن', 'left_leg': 'الساق اليسرى', 'right_leg': 'الساق اليمنى',
+    'head': 'الرأس', 'torso': 'الجذع',
+    'left_arm': 'العضد الأيسر', 'right_arm': 'العضد الأيمن',
+    'left_forearm': 'الساعد الأيسر', 'right_forearm': 'الساعد الأيمن',
+    'left_leg': 'الفخذ الأيسر', 'right_leg': 'الفخذ الأيمن',
+    'left_lower_leg': 'الساق السفلى اليسرى', 'right_lower_leg': 'الساق السفلى اليمنى',
   };
 
   @override
