@@ -80,8 +80,12 @@ class MotionChoreography {
           return -1.02 * hold + 0.22 * oscillation * waving;
         }
         if (id == 'right_forearm') {
+          final raise = _smooth((p - 0.06) / 0.24);
+          final lower = 1 - _smooth((p - 0.68) / 0.22);
+          final hold = raise * lower;
           final waving = _window(p, 0.25, 0.73, 0.10);
-          return 0.34 * waving + 0.10 * math.sin((p - 0.25) / 0.48 * 6 * math.pi) * waving;
+          return -0.34 * hold +
+              0.10 * math.sin((p - 0.25) / 0.48 * 6 * math.pi) * waving;
         }
         if (id == 'left_arm') return 0.045 * math.sin(p * 2 * math.pi);
         if (id == 'left_forearm') return 0.025 * math.sin(p * 2 * math.pi);
