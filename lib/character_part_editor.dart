@@ -36,10 +36,14 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   static const _parts = <_RigPart>[
     _RigPart('head', 'الرأس', Color(0xFFE85D75)),
     _RigPart('torso', 'الجذع', Color(0xFF6D5CE8)),
-    _RigPart('left_arm', 'الذراع الأيسر', Color(0xFF2D9CDB)),
-    _RigPart('right_arm', 'الذراع الأيمن', Color(0xFF20A477)),
-    _RigPart('left_leg', 'الساق اليسرى', Color(0xFFE89A32)),
-    _RigPart('right_leg', 'الساق اليمنى', Color(0xFF9B59B6)),
+    _RigPart('left_arm', 'العضد الأيسر', Color(0xFF2D9CDB)),
+    _RigPart('right_arm', 'العضد الأيمن', Color(0xFF20A477)),
+    _RigPart('left_forearm', 'الساعد الأيسر', Color(0xFF56B4E9)),
+    _RigPart('right_forearm', 'الساعد الأيمن', Color(0xFF63C7A3)),
+    _RigPart('left_leg', 'الفخذ الأيسر', Color(0xFFE89A32)),
+    _RigPart('right_leg', 'الفخذ الأيمن', Color(0xFF9B59B6)),
+    _RigPart('left_lower_leg', 'الساق السفلى اليسرى', Color(0xFFF0B65C)),
+    _RigPart('right_lower_leg', 'الساق السفلى اليمنى', Color(0xFFB887D0)),
   ];
 
   final List<_RigStroke> _strokes = [];
@@ -323,7 +327,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                         const Padding(
                           padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
                           child: Text(
-                            'لوّن فوق الجزء الذي تريد تحريكه. استخدم أجزاء منفصلة ولا تمرّر الفرشاة على الخلفية.',
+                            'حدّد كل قطعة على حدة: الرأس، الجذع، العضد والساعد لكل ذراع، والفخذ والساق السفلى لكل رجل. اجعل التحديدات تلتقي قليلًا عند الكوع والركبة، وتجنّب الخلفية.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Color(0xFF697286), height: 1.5),
                           ),
