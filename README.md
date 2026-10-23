@@ -33,7 +33,7 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
 2. Replace stroke-only part masks with reliable segmentation masks plus joint-aware overlap and occlusion reconstruction; keep the current articulated segments as a test harness, not the final quality bar.
-3. Add explicit shoulder, elbow, hip, and knee relationships, validate pivot placement against each drawing, and connect corrected masks to a hierarchical motion engine.
+3. Complete the hierarchical rig with explicit shoulder, elbow, hip, and knee relationships, validate pivot placement against each drawing, and ensure every child segment follows all parent transforms.
 4. Add regression tests and run `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
 5. Verify the animation visually on an Android device before moving to MP4 export or claiming production readiness.
 
