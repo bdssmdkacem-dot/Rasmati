@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'rig_joint_preview.dart';
 import 'rig_mask_validation.dart';
+import 'transparent_region_inpainting.dart';
 
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
@@ -378,6 +379,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       }
 
       final base = img.Image.from(source);
+      final removedPixels = List<bool>.filled(width * height, false);
       final savedParts = <String>[];
       for (final part in _parts) {
         final layer = img.Image(width: width, height: height, numChannels: 4);
@@ -396,12 +398,29 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
             if (ownership[index] == part.id) {
               base.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(),
                   pixel.b.toInt(), 0);
+              removedPixels[index] = true;
             }
             hasPixels = true;
           }
         }
         if (hasPixels) savedParts.add(part.id);
         masks[part.id] = layer;
+      }
+
+      // Automatically propagate nearby visible colors into the cut-out areas.
+      // This is a local inpainting fallback, not semantic reconstruction of
+      // hidden anatomy or exact line art; manual clone patches can refine it.
+      final repairedBase = TransparentRegionInpainting.fillRemovedPixels(
+        base: base,
+        removed: removedPixels,
+      );
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          final index = y * width + x;
+          if (!removedPixels[index]) continue;
+          final pixel = repairedBase.getPixel(x, y);
+          base.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(), pixel.a.toInt());
+        }
       }
 
       // Clone intact source pixels into the exposed base after limb pixels are
@@ -458,7 +477,8 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         'strokes': _strokes.length,
         'polygons': _polygons.length,
         'repairPatches': _repairPatches.length,
-        'maskStrategy': 'filled_polygon_plus_brush_corrections_and_manual_clone_repair',
+        'maskStrategy': 'filled_polygon_brush_local_inpainting_and_manual_clone_repair',
+        'automaticInpainting': 'neighbor_color_propagation',
         'sourcePreserved': true,
         'coordinateSpace': 'full_canvas_normalized',
       };
