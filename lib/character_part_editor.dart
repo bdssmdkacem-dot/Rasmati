@@ -224,7 +224,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       // complete body-part areas; strokes remain available for narrow corrections.
       for (final polygon in _polygons) {
         if (polygon.points.length < 3) continue;
-        final vertices = polygon.points.map((point) => math.Point<int>(
+        final vertices = polygon.points.map((point) => img.Point(
           (point.dx * (width - 1)).round().clamp(0, width - 1).toInt(),
           (point.dy * (height - 1)).round().clamp(0, height - 1).toInt(),
         )).toList();
