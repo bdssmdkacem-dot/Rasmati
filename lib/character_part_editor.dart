@@ -378,9 +378,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         appBar: AppBar(
           title: const Text('تجهيز أجزاء الشخصية', style: TextStyle(fontWeight: FontWeight.w900)),
           actions: [
-            IconButton(tooltip: 'تراجع', onPressed: _strokes.isEmpty ? null : _undo,
+            IconButton(tooltip: 'تراجع', onPressed: (_strokes.isEmpty && _polygons.isEmpty && _polygonDraft.isEmpty) ? null : _undo,
                 icon: const Icon(Icons.undo_rounded)),
-            IconButton(tooltip: 'إعادة', onPressed: _redo.isEmpty ? null : _redoStroke,
+            IconButton(tooltip: 'إعادة', onPressed: (_redo.isEmpty && _redoPolygons.isEmpty) ? null : _redoStroke,
                 icon: const Icon(Icons.redo_rounded)),
           ],
         ),
