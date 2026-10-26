@@ -95,6 +95,12 @@ For each image, keep the original and create ground-truth masks by hiding known 
 - Added guard tests for empty masks, mismatched masks, unloaded-model errors, and source immutability. These tests do not prove inference correctness; model-backed tests still require the verified ONNX file.
 - CI must now validate the new runtime dependency and Dart API. Runtime tensor names, normalization, output range, APK size, visual quality and device performance remain unverified until the model-backed test run and physical-phone test.
 
+### Reproducible offline artifact evaluation harness
+
+The repository now includes `tool/evaluate_lama.py` and pinned Python dependencies in `tool/requirements-lama-eval.txt`. After obtaining the pinned file locally, it verifies the checksum and tensor names/shapes, runs deterministic synthetic fixtures for thin lines, facial features and limb overlap, and saves original/mask/repaired/comparison PNGs plus a JSON report under `build/lama-evaluation/`. It can also accept a permissioned real drawing and a same-size binary mask (`--image` and `--mask`). No files are uploaded.
+
+The harness is an offline desktop preflight, not an Android benchmark. A synthetic drawing is not a substitute for the user's real drawings, and desktop timing/memory is not a substitute for physical-device measurements. Any mismatch in output scaling or tensor contract should stop evaluation instead of silently creating a bad composite.
+
 ## Current status
 
 - The code currently uses classical exemplar-based inpainting; it is not yet connected to a learned neural model.
