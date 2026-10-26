@@ -32,6 +32,13 @@ class _RigStroke {
   final double radius;
 }
 
+class _RigPolygon {
+  _RigPolygon(this.partId, this.points);
+
+  final String partId;
+  final List<Offset> points;
+}
+
 class _CharacterPartEditorState extends State<CharacterPartEditor> {
   static const _parts = <_RigPart>[
     _RigPart('head', 'الرأس', Color(0xFFE85D75)),
@@ -48,6 +55,10 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
 
   final List<_RigStroke> _strokes = [];
   final List<_RigStroke> _redo = [];
+  final List<_RigPolygon> _polygons = [];
+  final List<_RigPolygon> _redoPolygons = [];
+  final List<Offset> _polygonDraft = [];
+  bool _polygonMode = true;
   String _selectedPart = 'head';
   double _brushRadius = 0.025;
   List<Offset>? _activePoints;
@@ -99,7 +110,35 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
     );
   }
 
+  void _addPolygonPoint(TapUpDetails details, Size size) {
+    if (!_polygonMode) return;
+    final point = _normalisedPoint(details.localPosition, size);
+    if (point == null) return;
+    setState(() {
+      _polygonDraft.add(point);
+      _redo.clear();
+      _redoPolygons.clear();
+    });
+  }
+
+  void _finishPolygon() {
+    if (_polygonDraft.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('أضف ثلاث نقاط على الأقل لإغلاق المنطقة.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    setState(() {
+      _polygons.add(_RigPolygon(_selectedPart, List.of(_polygonDraft)));
+      _polygonDraft.clear();
+      _redo.clear();
+      _redoPolygons.clear();
+    });
+  }
+
   void _startStroke(DragStartDetails details, Size size) {
+    if (_polygonMode) return;
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null) return;
     setState(() {
@@ -109,12 +148,14 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   }
 
   void _extendStroke(DragUpdateDetails details, Size size) {
+    if (_polygonMode) return;
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null || _activePoints == null) return;
     setState(() => _activePoints = [..._activePoints!, point]);
   }
 
   void _finishStroke(DragEndDetails details) {
+    if (_polygonMode) return;
     final points = _activePoints;
     if (points == null || points.isEmpty) return;
     setState(() {
@@ -124,18 +165,29 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   }
 
   void _undo() {
-    if (_strokes.isEmpty) return;
-    setState(() => _redo.add(_strokes.removeLast()));
+    if (_strokes.isEmpty && _polygons.isEmpty && _polygonDraft.isEmpty) return;
+    setState(() {
+      if (_polygonDraft.isNotEmpty) {
+        _polygonDraft.clear();
+      } else if (_polygons.isNotEmpty) {
+        _redoPolygons.add(_polygons.removeLast());
+      } else {
+        _redo.add(_strokes.removeLast());
+      }
+    });
   }
 
   void _redoStroke() {
-    if (_redo.isEmpty) return;
-    setState(() => _strokes.add(_redo.removeLast()));
+    if (_redoPolygons.isNotEmpty) {
+      setState(() => _polygons.add(_redoPolygons.removeLast()));
+    } else if (_redo.isNotEmpty) {
+      setState(() => _strokes.add(_redo.removeLast()));
+    }
   }
 
   Future<void> _saveRig() async {
     final source = _decoded;
-    if (source == null || _strokes.isEmpty || _saving) return;
+    if (source == null || (_strokes.isEmpty && _polygons.isEmpty) || _saving) return;
     setState(() => _saving = true);
     try {
       final width = source.width;
@@ -166,6 +218,18 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
               color: img.ColorRgba8(255, 255, 255, 255));
           }
         }
+      }
+
+      // Rasterize closed polygon regions as filled masks. These masks represent
+      // complete body-part areas; strokes remain available for narrow corrections.
+      for (final polygon in _polygons) {
+        if (polygon.points.length < 3) continue;
+        final vertices = polygon.points.map((point) => math.Point<int>(
+          (point.dx * (width - 1)).round().clamp(0, width - 1),
+          (point.dy * (height - 1)).round().clamp(0, height - 1),
+        )).toList();
+        img.fillPolygon(masks[polygon.partId]!, vertices: vertices,
+          color: img.ColorRgba8(255, 255, 255, 255));
       }
 
       // Expand only stroke endpoints that meet another painted part. This
@@ -278,6 +342,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         'sourceHeight': height,
         'parts': savedParts,
         'strokes': _strokes.length,
+        'polygons': _polygons.length,
+        'maskStrategy': 'filled_polygon_plus_brush_corrections',
+        'sourcePreserved': true,
         'coordinateSpace': 'full_canvas_normalized',
       };
       await File('${folder.path}/manifest.json').writeAsString(jsonEncode(manifest));
@@ -350,6 +417,18 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
+                            ChoiceChip(label: const Text('منطقة كاملة'), selected: _polygonMode,
+                              onSelected: (_) => setState(() { _polygonMode = true; _activePoints = null; })),
+                            ChoiceChip(label: const Text('فرشاة تصحيح'), selected: !_polygonMode,
+                              onSelected: (_) => setState(() { _polygonMode = false; _polygonDraft.clear(); })),
+                            if (_polygonMode) ActionChip(label: Text('إغلاق المنطقة (${_polygonDraft.length})'),
+                              avatar: const Icon(Icons.check_circle_outline, size: 18),
+                              onPressed: _finishPolygon),
+                          ]),
+                        ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12),
@@ -357,6 +436,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                               final size = Size(constraints.maxWidth, constraints.maxHeight);
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
+                                onTapUp: (d) => _addPolygonPoint(d, size),
                                 onPanStart: (d) => _startStroke(d, size),
                                 onPanUpdate: (d) => _extendStroke(d, size),
                                 onPanEnd: _finishStroke,
@@ -373,6 +453,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                     imageHeight: _decoded!.height,
                                     parts: _parts,
                                     strokes: List.of(_strokes),
+                                    polygons: List.of(_polygons),
+                                    polygonDraft: List.of(_polygonDraft),
+                                    polygonMode: _polygonMode,
                                     activePart: _selectedPart,
                                     activePoints: _activePoints == null ? null : List.of(_activePoints!),
                                     brushRadius: _brushRadius,
@@ -411,7 +494,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                               SizedBox(
                                 width: double.infinity,
                                 child: FilledButton.icon(
-                                  onPressed: _strokes.isEmpty || _saving ? null : _saveRig,
+                                  onPressed: (_strokes.isEmpty && _polygons.isEmpty) || _saving ? null : _saveRig,
                                   icon: _saving
                                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                                       : const Icon(Icons.save_alt_rounded),
@@ -435,6 +518,9 @@ class _RigCanvasPainter extends CustomPainter {
     required this.imageHeight,
     required this.parts,
     required this.strokes,
+    required this.polygons,
+    required this.polygonDraft,
+    required this.polygonMode,
     required this.activePart,
     required this.activePoints,
     required this.brushRadius,
@@ -444,6 +530,9 @@ class _RigCanvasPainter extends CustomPainter {
   final int imageHeight;
   final List<_RigPart> parts;
   final List<_RigStroke> strokes;
+  final List<_RigPolygon> polygons;
+  final List<Offset> polygonDraft;
+  final bool polygonMode;
   final String activePart;
   final List<Offset>? activePoints;
   final double brushRadius;
@@ -472,6 +561,24 @@ class _RigCanvasPainter extends CustomPainter {
         canvas.drawPath(path, p);
       }
     }
+    for (final polygon in polygons) {
+      final part = parts.firstWhere((p) => p.id == polygon.partId);
+      final mapped = polygon.points.map((v) => Offset(rect.left + v.dx * rect.width, rect.top + v.dy * rect.height)).toList();
+      if (mapped.length >= 3) {
+        final path = Path()..moveTo(mapped.first.dx, mapped.first.dy);
+        for (final point in mapped.skip(1)) { path.lineTo(point.dx, point.dy); }
+        path.close();
+        canvas.drawPath(path, Paint()..color = part.color.withValues(alpha: 0.30)..style = PaintingStyle.fill);
+        canvas.drawPath(path, Paint()..color = part.color.withValues(alpha: 0.95)..style = PaintingStyle.stroke..strokeWidth = 2);
+      }
+    }
+    if (polygonMode && polygonDraft.isNotEmpty) {
+      final mapped = polygonDraft.map((v) => Offset(rect.left + v.dx * rect.width, rect.top + v.dy * rect.height)).toList();
+      final path = Path()..moveTo(mapped.first.dx, mapped.first.dy);
+      for (final point in mapped.skip(1)) { path.lineTo(point.dx, point.dy); }
+      canvas.drawPath(path, Paint()..color = parts.firstWhere((p) => p.id == activePart).color.withValues(alpha: 0.95)..style = PaintingStyle.stroke..strokeWidth = 3);
+      for (final point in mapped) { canvas.drawCircle(point, 4, Paint()..color = parts.firstWhere((p) => p.id == activePart).color); }
+    }
     for (final stroke in strokes) {
       drawStroke(stroke.partId, stroke.points, stroke.radius);
     }
@@ -482,6 +589,9 @@ class _RigCanvasPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RigCanvasPainter oldDelegate) =>
       oldDelegate.strokes != strokes ||
+      oldDelegate.polygons != polygons ||
+      oldDelegate.polygonDraft != polygonDraft ||
+      oldDelegate.polygonMode != polygonMode ||
       oldDelegate.activePoints != activePoints ||
       oldDelegate.activePart != activePart ||
       oldDelegate.brushRadius != brushRadius;
