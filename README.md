@@ -38,6 +38,10 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 - CI passed earlier for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`; that result predates the inpainting changes. Latest relevant run: [CI run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386718680). At last check it was still in progress, so analyze/tests/APK for this version are not yet confirmed.
 - **Still blocked:** wave/walk/nod have not been visually accepted on representative drawings, and no physical Android install/test has been recorded. Keep PR #1 open and do not merge based on CI alone.
 
+## Neural inpainting evaluation
+
+The current repair code is a classical exemplar-based method, not a neural model. See [the local inpainting model evaluation and privacy plan](docs/inpainting-model-evaluation.md) for candidate assessment, offline-only architecture, test dataset, and release gates. No drawing is sent to a hosted service by this plan; any future remote processing would require separate explicit consent.
+
 ## Next development order
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
