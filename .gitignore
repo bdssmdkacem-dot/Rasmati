@@ -20,3 +20,7 @@ android/app/*.keystore
 
 # Optional local ML model weights (large; never commit or bundle by accident)
 .local_models/
+
+# Python evaluation tooling
+__pycache__/
+*.py[cod]
