@@ -29,14 +29,15 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 7. **Device acceptance:** build and install the APK, then inspect real drawings on an Android phone, including thin lines, pale colors, overlapping limbs, and non-human drawings. Record failures and fix them before release.
 8. **Export:** implement MP4 rendering with correct frame timing, dimensions, and audio policy; test that exported videos open and play before advertising export as available.
 
-## Rig-mask validation update — 2026-10-26
+## Rig-mask validation and manual repair — 2026-10-26
 
-- Added filled polygon masks alongside the existing narrow correction brush in `lib/character_part_editor.dart`.
-- Added a preflight validator in `lib/rig_mask_validation.dart` and unit tests in `test/rig_mask_validation_test.dart` for empty masks, fewer than two usable parts, unknown part IDs, negative counts, and valid masks.
-- The editor now rejects empty or too-small masks for any part the user attempted to mark before it subtracts source pixels from the base or opens the joint preview.
-- The earlier CI failure was confirmed in the log: `List<Point<int>>` was incompatible with the image package's `List<Point>`; polygon rasterization was changed to use `img.Point`.
-- **Not complete:** this is still manual polygon segmentation, not automatic semantic segmentation. Hidden pixels behind limbs are not reconstructed yet, and no representative-drawing visual review or physical Android test has passed. Do not merge this branch or claim commercial animation quality based on compilation alone.
-- Current verification for the latest branch revision is pending: [latest CI run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379585178).
+- Added filled polygon masks alongside the correction brush in `lib/character_part_editor.dart`.
+- Added `RigMaskValidation` and unit tests for empty masks, fewer than two usable parts, unknown IDs, negative counts, and valid masks. The editor blocks empty/too-small masks before subtracting source pixels.
+- Added a **manual clone-repair mode** for exposed areas: tap a clean source point, then tap the target where a limb will move away. The editor copies a circular patch from the original image into the base after the rig layers are removed. It rejects source patches where more than 25% of sampled pixels overlap moving-part masks to reduce limb-ghost contamination.
+- Repair is intentionally manual and local. It does **not** infer hidden anatomy or reconstruct complex linework automatically; repeated textures, patch edges, and background gradients still require visual inspection.
+- CI passed for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: `flutter analyze`, `flutter test`, `flutter build apk --debug`, and APK artifact upload all succeeded. The subsequent manual-repair commits need their own CI result before being accepted.
+- APK artifact: [rasmati-debug-apk from successful run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379749960).
+- **Still blocked:** no visual regression review on multiple real drawings and no physical Android installation/test has been recorded. Do not merge this branch or claim commercial animation quality from CI alone.
 
 ## Next development order
 
