@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'rig_joint_preview.dart';
+import 'rig_mask_validation.dart';
 
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
@@ -275,6 +276,38 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
             );
           }
         }
+      }
+
+      // Validate every part the user attempted to draw before subtracting
+      // pixels from the base image or opening the joint/motion preview.
+      final intendedParts = <String>{
+        ..._strokes.map((stroke) => stroke.partId),
+        ..._polygons.map((polygon) => polygon.partId),
+      };
+      final opaqueCounts = <String, int>{};
+      for (final partId in intendedParts) {
+        var count = 0;
+        final mask = masks[partId]!;
+        for (var y = 0; y < height; y++) {
+          for (var x = 0; x < width; x++) {
+            if (mask.getPixel(x, y).a > 0) count++;
+          }
+        }
+        opaqueCounts[partId] = count;
+      }
+      final maskErrors = RigMaskValidation.validate(
+        expectedPartIds: intendedParts,
+        opaquePixelCounts: opaqueCounts,
+      );
+      if (maskErrors.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('تعذّر اعتماد التقسيم: ${maskErrors.take(3).join('؛ ')}'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ));
+        }
+        return;
       }
 
       // Keep a deterministic owner for removing pixels from the base image,
