@@ -41,6 +41,12 @@ class TransparentRegionInpainting {
 
     bool inBounds(int x, int y) => x >= 0 && y >= 0 && x < width && y < height;
     int idx(int x, int y) => y * width + x;
+    double luminanceAt(int x, int y) {
+      final pixel = result.getPixel(x, y);
+      return 0.299 * pixel.r.toDouble() +
+          0.587 * pixel.g.toDouble() +
+          0.114 * pixel.b.toDouble();
+    }
 
     // Source patch centers are sampled on a grid and are accepted only if the
     // complete patch comes from intact, opaque pixels.
@@ -97,13 +103,13 @@ class TransparentRegionInpainting {
         }
         if (knownNeighbors == 0) continue;
         final left = inBounds(x - 1, y) && known[idx(x - 1, y)]
-            ? result.getPixel(x - 1, y).luminance.toDouble() : 0.0;
+            ? luminanceAt(x - 1, y) : 0.0;
         final right = inBounds(x + 1, y) && known[idx(x + 1, y)]
-            ? result.getPixel(x + 1, y).luminance.toDouble() : left;
+            ? luminanceAt(x + 1, y) : left;
         final up = inBounds(x, y - 1) && known[idx(x, y - 1)]
-            ? result.getPixel(x, y - 1).luminance.toDouble() : 0.0;
+            ? luminanceAt(x, y - 1) : 0.0;
         final down = inBounds(x, y + 1) && known[idx(x, y + 1)]
-            ? result.getPixel(x, y + 1).luminance.toDouble() : up;
+            ? luminanceAt(x, y + 1) : up;
         final gradient = (right - left).abs() + (down - up).abs();
         final priority = knownNeighbors + gradient / 255.0;
         if (priority > bestPriority) {
