@@ -17,3 +17,6 @@ coverage/
 android/key.properties
 android/app/*.jks
 android/app/*.keystore
+
+# Optional local ML model weights (large; never commit or bundle by accident)
+.local_models/
