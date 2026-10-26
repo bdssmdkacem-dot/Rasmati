@@ -246,3 +246,13 @@ After each substantial change:
 - Commits: hierarchy `903257783d6b8ae40172b43fec1b69ba331615c1`; motion ancestor propagation `79f83f0ec96731dbc9b8a8e6c5eb54232a2c0c06`; joint-preview ancestor propagation `cc2265914b75a62e078a94dcfe5e7eb8522c4c0f`; hierarchy tests `d8e3dec1bca0704f3f163dfc1e473a560e48963f`.
 - CI for this newest hierarchy code is pending. Earlier run #127 passed `flutter analyze` and `flutter test` and had started `flutter build apk --debug`, but that was for an earlier commit and does not prove the current code builds. Keep APK status unconfirmed until the latest run finishes and artifact upload is present.
 - Known commercial blockers remain: current masks are brush-painted rather than robust semantic segmentation; shared joint pixels can create duplicate/ghost contours; hidden artwork behind a rotating part is not reconstructed; default pivots need per-character fitting; no representative drawing has passed a visual regression review; no physical Android install has been confirmed. These are explicit acceptance blockers, not optional polish.
+
+
+## 2026-10-26 — CI verified; manual clone-repair added
+
+- Verified run [#142](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379749960) on commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: analyze, tests, debug APK build, and `rasmati-debug-apk` artifact upload all passed.
+- Added manual clone-repair interaction to the part editor on the current branch: select a clean source point, then a target point under a region expected to be uncovered by motion. Repair copies pixels from the original artwork into the cut-out base, after rig-mask subtraction.
+- Added a guard that refuses a source patch if more than 25% of its sampled circular area overlaps any moving-part mask, to reduce copying limb pixels into the background.
+- README updated with the actual passing CI evidence and explicit limitations.
+- **Important:** run #142 predates the clone-repair commits. CI for the latest head must pass separately. The repair workflow has not yet been visually inspected on real drawings; manual clone repair can leave seams and is not automatic hidden-anatomy reconstruction.
+- **Still not verified:** wave/walk/nod on multiple actual drawings, APK installation and interaction on a physical Android phone, and source-art preservation under motion. Keep PR #1 open and do not merge to `main` until those gates have evidence.
