@@ -40,6 +40,14 @@ class _RigPolygon {
   final List<Offset> points;
 }
 
+class _RepairPatch {
+  const _RepairPatch({required this.source, required this.target, required this.radius});
+
+  final Offset source;
+  final Offset target;
+  final double radius;
+}
+
 class _CharacterPartEditorState extends State<CharacterPartEditor> {
   static const _parts = <_RigPart>[
     _RigPart('head', 'الرأس', Color(0xFFE85D75)),
@@ -59,6 +67,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   final List<_RigPolygon> _polygons = [];
   final List<_RigPolygon> _redoPolygons = [];
   final List<Offset> _polygonDraft = [];
+  final List<_RepairPatch> _repairPatches = [];
+  Offset? _repairSource;
+  bool _repairMode = false;
   bool _polygonMode = true;
   String _selectedPart = 'head';
   double _brushRadius = 0.025;
@@ -112,9 +123,22 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   }
 
   void _addPolygonPoint(TapUpDetails details, Size size) {
-    if (!_polygonMode) return;
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null) return;
+    if (_repairMode) {
+      setState(() {
+        if (_repairSource == null) {
+          _repairSource = point;
+        } else {
+          _repairPatches.add(_RepairPatch(
+            source: _repairSource!, target: point, radius: _brushRadius,
+          ));
+          _repairSource = null;
+        }
+      });
+      return;
+    }
+    if (!_polygonMode) return;
     setState(() {
       _polygonDraft.add(point);
       _redo.clear();
@@ -350,6 +374,33 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         masks[part.id] = layer;
       }
 
+      // Clone intact source pixels into the exposed base after limb pixels are
+      // removed. The user chooses a clean source point and a repair target;
+      // this is a deterministic manual repair, not an automatic inpainting claim.
+      for (final patch in _repairPatches) {
+        final sx = (patch.source.dx * (width - 1)).round();
+        final sy = (patch.source.dy * (height - 1)).round();
+        final tx = (patch.target.dx * (width - 1)).round();
+        final ty = (patch.target.dy * (height - 1)).round();
+        final radius = math.max(1, (patch.radius * math.min(width, height)).round());
+        final sourcePixels = <({int dx, int dy, int r, int g, int b, int a})>[];
+        for (var dy = -radius; dy <= radius; dy++) {
+          for (var dx = -radius; dx <= radius; dx++) {
+            if (dx * dx + dy * dy > radius * radius) continue;
+            final px = sx + dx, py = sy + dy;
+            if (px < 0 || py < 0 || px >= width || py >= height) continue;
+            final pixel = source.getPixel(px, py);
+            sourcePixels.add((dx: dx, dy: dy, r: pixel.r.toInt(), g: pixel.g.toInt(),
+              b: pixel.b.toInt(), a: pixel.a.toInt()));
+          }
+        }
+        for (final pixel in sourcePixels) {
+          final px = tx + pixel.dx, py = ty + pixel.dy;
+          if (px < 0 || py < 0 || px >= width || py >= height) continue;
+          base.setPixelRgba(px, py, pixel.r, pixel.g, pixel.b, pixel.a);
+        }
+      }
+
       // A rig with only one non-empty layer cannot articulate independently.
       // Stop here instead of opening the joint editor with a misleading rig.
       if (savedParts.length < 2) {
@@ -376,7 +427,8 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         'parts': savedParts,
         'strokes': _strokes.length,
         'polygons': _polygons.length,
-        'maskStrategy': 'filled_polygon_plus_brush_corrections',
+        'repairPatches': _repairPatches.length,
+        'maskStrategy': 'filled_polygon_plus_brush_corrections_and_manual_clone_repair',
         'sourcePreserved': true,
         'coordinateSpace': 'full_canvas_normalized',
       };
@@ -452,16 +504,26 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                         const SizedBox(height: 8),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
-                            ChoiceChip(label: const Text('منطقة كاملة'), selected: _polygonMode,
-                              onSelected: (_) => setState(() { _polygonMode = true; _activePoints = null; })),
-                            ChoiceChip(label: const Text('فرشاة تصحيح'), selected: !_polygonMode,
-                              onSelected: (_) => setState(() { _polygonMode = false; _polygonDraft.clear(); })),
-                            if (_polygonMode) ActionChip(label: Text('إغلاق المنطقة (${_polygonDraft.length})'),
-                              avatar: const Icon(Icons.check_circle_outline, size: 18),
-                              onPressed: _finishPolygon),
+                          child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
+                            ChoiceChip(label: const Text('منطقة كاملة'), selected: _polygonMode && !_repairMode,
+                              onSelected: (_) => setState(() { _repairMode = false; _polygonMode = true; _activePoints = null; })),
+                            ChoiceChip(label: const Text('فرشاة تصحيح'), selected: !_polygonMode && !_repairMode,
+                              onSelected: (_) => setState(() { _repairMode = false; _polygonMode = false; _polygonDraft.clear(); })),
+                            ChoiceChip(label: const Text('ترميم يدوي'), selected: _repairMode,
+                              onSelected: (_) => setState(() { _repairMode = true; _activePoints = null; _polygonDraft.clear(); _repairSource = null; })),
+                            if (_polygonMode && !_repairMode) ActionChip(label: Text('إغلاق المنطقة (${_polygonDraft.length})'),
+                              avatar: const Icon(Icons.check_circle_outline, size: 18), onPressed: _finishPolygon),
                           ]),
                         ),
+                        if (_repairMode)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                            child: Text(_repairSource == null
+                              ? 'الترميم: اضغط أولًا على منطقة سليمة لنسخها، ثم اضغط مكان المنطقة المخفية'
+                              : 'تم اختيار المصدر؛ اضغط الآن على موضع الترميم. عمليات الترميم: ${_repairPatches.length}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF526176))),
+                          ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12),
