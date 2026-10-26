@@ -256,3 +256,13 @@ After each substantial change:
 - README updated with the actual passing CI evidence and explicit limitations.
 - **Important:** run #142 predates the clone-repair commits. CI for the latest head must pass separately. The repair workflow has not yet been visually inspected on real drawings; manual clone repair can leave seams and is not automatic hidden-anatomy reconstruction.
 - **Still not verified:** wave/walk/nod on multiple actual drawings, APK installation and interaction on a physical Android phone, and source-art preservation under motion. Keep PR #1 open and do not merge to `main` until those gates have evidence.
+
+
+## 2026-10-26 — Automatic local inpainting pass
+
+- Added `lib/transparent_region_inpainting.dart`: fills only pixels explicitly marked as removed by rig masks, propagating neighboring visible colors inward; unrelated transparent canvas pixels remain untouched.
+- Integrated inpainting into the saved base-layer pipeline before optional manual clone patches. The original source image remains unchanged.
+- Added `test/transparent_region_inpainting_test.dart` for hole fill, untouched external transparency, source immutability, and mismatched mask size.
+- Updated README to state the critical limitation: color propagation reduces cutout holes but cannot reconstruct actual hidden anatomy or complex original line art. It is not a semantic AI inpainting model.
+- Latest CI at the time of this note is [run #147](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386422204). Flutter setup and SVG rendering started successfully; dependency resolution, analyze, tests, and APK build are still pending. No success claim for this new code yet.
+- Visual wave/walk/nod review on multiple drawings and physical Android install remain outstanding. PR #1 remains unmerged.
