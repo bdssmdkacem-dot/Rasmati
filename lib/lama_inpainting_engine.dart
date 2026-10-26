@@ -11,7 +11,11 @@ import 'package:image/image.dart' as img;
 /// Output is composited only within [removedMask]; all other source pixels are
 /// copied byte-for-byte from [base].
 class LamaInpaintingEngine {
-  LamaInpaintingEngine({OnnxRuntime? runtime}) : _runtime = runtime ?? OnnxRuntime();
+  LamaInpaintingEngine({OnnxRuntime? runtime}) : _runtime = runtime;
+
+  OnnxRuntime? _runtime;
+
+  OnnxRuntime get _runtimeOrCreate => _runtime ??= OnnxRuntime();
 
   static const int modelWidth = 512;
   static const int modelHeight = 512;
@@ -19,7 +23,6 @@ class LamaInpaintingEngine {
   static const String maskInputName = 'mask';
   static const String outputName = 'output';
 
-  final OnnxRuntime _runtime;
   OrtSession? _session;
 
   bool get isLoaded => _session != null;
@@ -28,7 +31,7 @@ class LamaInpaintingEngine {
     if (modelPath.trim().isEmpty) {
       throw ArgumentError.value(modelPath, 'modelPath', 'Must be a local verified model path.');
     }
-    final next = await _runtime.createSession(
+    final next = await _runtimeOrCreate.createSession(
       modelPath,
       options: OrtSessionOptions(
         intraOpNumThreads: 2,
