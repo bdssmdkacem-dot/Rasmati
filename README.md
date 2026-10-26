@@ -29,15 +29,14 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 7. **Device acceptance:** build and install the APK, then inspect real drawings on an Android phone, including thin lines, pale colors, overlapping limbs, and non-human drawings. Record failures and fix them before release.
 8. **Export:** implement MP4 rendering with correct frame timing, dimensions, and audio policy; test that exported videos open and play before advertising export as available.
 
-## Rig-mask validation and manual repair — 2026-10-26
+## Rig-mask validation and hidden-region repair — 2026-10-26
 
-- Added filled polygon masks alongside the correction brush in `lib/character_part_editor.dart`.
-- Added `RigMaskValidation` and unit tests for empty masks, fewer than two usable parts, unknown IDs, negative counts, and valid masks. The editor blocks empty/too-small masks before subtracting source pixels.
-- Added a **manual clone-repair mode** for exposed areas: tap a clean source point, then tap the target where a limb will move away. The editor copies a circular patch from the original image into the base after the rig layers are removed. It rejects source patches where more than 25% of sampled pixels overlap moving-part masks to reduce limb-ghost contamination.
-- Repair is intentionally manual and local. It does **not** infer hidden anatomy or reconstruct complex linework automatically; repeated textures, patch edges, and background gradients still require visual inspection.
-- CI passed for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: `flutter analyze`, `flutter test`, `flutter build apk --debug`, and APK artifact upload all succeeded. The subsequent manual-repair commits need their own CI result before being accepted.
-- APK artifact: [rasmati-debug-apk from successful run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379749960).
-- **Still blocked:** no visual regression review on multiple real drawings and no physical Android installation/test has been recorded. Do not merge this branch or claim commercial animation quality from CI alone.
+- Added filled polygon masks and a preflight validator with unit tests for empty masks, too few usable parts, unknown IDs, negative counts, and valid masks.
+- Added **automatic local inpainting** for pixels removed by the rig masks. The algorithm propagates nearby visible colors inward, while leaving unrelated transparent background untouched. Unit tests cover pixel filling, source immutability, untouched transparent background, and invalid mask dimensions.
+- Added optional manual clone patches for cases where the automatic fill is too soft or misses detail. Source patches that overlap moving-part masks too heavily are rejected.
+- **Important quality limitation:** local color propagation can fill a hole and reduce transparent gaps, but it cannot infer the actual hidden anatomy or faithfully restore complex line art. This is a fallback repair, not AI semantic reconstruction. Each real drawing still needs visual review and, where necessary, manual patch refinement.
+- CI passed earlier for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: `flutter analyze`, `flutter test`, debug APK build, and artifact upload succeeded. That result predates the new inpainting code; latest-head CI is pending here: [latest run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386356540).
+- **Still blocked:** wave/walk/nod have not been visually accepted on representative real drawings, and no physical Android installation/test has been recorded. Keep PR #1 open and do not merge based on CI alone.
 
 ## Next development order
 
