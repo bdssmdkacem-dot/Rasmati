@@ -286,3 +286,13 @@ After each substantial change:
 - Proposed runtime must be pinned/checksum-verified, license-reviewed, run on-device, composite only inside the removed mask, and fall back to local exemplar repair on failure. A preview/undo is required before accepting generated pixels.
 - Latest CI triggered for evaluation-doc commit: [run #159](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40387083449), currently queued. No current-head analyze/test/APK pass is confirmed.
 - PR #1 remains open and unmerged. Real-artwork visual regression and physical Android testing are still release gates.
+
+
+## Local LaMa ONNX prototype — 2026-10-26
+
+- Added `flutter_onnxruntime ^1.9.0` and `lib/lama_inpainting_engine.dart`: explicit local model path, CPU inference, input/output name and shape guards, mask-only compositing, tensor/session disposal, and no network path.
+- Added `test/lama_inpainting_engine_test.dart` for empty-mask no-op, mask-dimension rejection, unloaded-model failure, and source immutability.
+- Pinned a third-party ONNX export in `docs/lama-model-lock.json` and added `tool/fetch_lama_model.sh`. It downloads only when manually invoked, checks SHA-256, and stores the artifact in ignored `.local_models/`; model bytes are not committed or bundled.
+- License status is still **not cleared for commercial redistribution**: the model host labels the export Apache-2.0, but the exact pretrained-weight and training-data rights require independent confirmation. Treat as local evaluation only until resolved.
+- CI runs for this series are in progress; no current-head analyzer/test/APK pass has been confirmed at this checkpoint. The model-backed tensor contract and visual quality are not yet tested because the model artifact is not part of the repository.
+- Still required: finish CI on the newest commit; obtain and validate the pinned artifact locally; verify its actual input/output names, shapes, normalization and mask polarity; run a reproducible suite covering lines, faces and limbs; save before/after images; measure cold/warm latency and memory; test the APK on the actual Android phone. PR #1 remains open; do not merge before all gates pass.
