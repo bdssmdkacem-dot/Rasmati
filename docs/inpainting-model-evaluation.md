@@ -23,6 +23,40 @@ Reference material:
 - Qualcomm LaMa-Dilated model card and mobile deployment details: https://huggingface.co/qualcomm/LaMa-Dilated
 - Qualcomm AI Hub model entry: https://aihub.qualcomm.com/mobile/models/lama_dilated
 
+
+## Licensing and Android compatibility audit (2026-10-26)
+
+### License status: source code is not enough
+
+- The upstream `advimman/lama` repository declares Apache-2.0 for its code. Its README distributes the `big-lama` checkpoint separately through a third-party Hugging Face mirror / Google Drive path.
+- Recent upstream issues explicitly ask whether the separately distributed pretrained weights are covered by Apache-2.0; the repository's code license alone does not settle that question. A third-party model card declaring Apache-2.0 is useful provenance but is not a substitute for a clear license grant from the rights holder for the exact checkpoint.
+- **Commercial redistribution gate: unresolved. Do not bundle or redistribute the upstream `big-lama` weights in a commercial Rasmati APK until the exact checkpoint's license and provenance are documented from an authoritative source.** Keep the model out of the app package while this is unresolved. If the rights holder does not clarify, select a model with an explicit, auditable license for both code and weights, or obtain legal review/permission.
+
+Sources checked:
+- Upstream project and separate checkpoint download instructions: https://github.com/advimman/lama
+- Open licensing clarification requests for the pretrained weights: https://github.com/advimman/lama/issues/365 and https://github.com/advimman/lama/issues/368
+- ONNX export mirror claiming Apache-2.0 for its export: https://huggingface.co/edgetools/lama (third-party claim; not treated as authoritative rights-holder confirmation)
+
+### Android runtime path
+
+- Flutter package candidate: `flutter_onnxruntime`, which wraps ONNX Runtime and documents Android support; the package page notes that versions at or above 1.5.1 address Android 16 KB page-size compatibility. This is a candidate to prototype, not yet a dependency in Rasmati.
+- ONNX Runtime documents Android CPU inference and NNAPI acceleration. NNAPI requires Android 8.1+ and is recommended on Android 9+; operator support and partitioning can reduce acceleration, so CPU must remain a correctness fallback.
+- A LaMa ONNX export surfaced in a third-party model card uses fixed `[1,3,512,512]` RGB image and `[1,1,512,512]` mask tensors, with `1 = hole` mask polarity and an output that must be composited by the caller. These assumptions must be verified against the exact artifact and checksum before implementing preprocessing.
+
+Sources:
+- Flutter ONNX Runtime package: https://pub.dev/packages/flutter_onnxruntime
+- ONNX Runtime mobile deployment: https://onnxruntime.ai/docs/tutorials/mobile/
+- ONNX Runtime NNAPI requirements and supported operators: https://onnxruntime.ai/docs/execution-providers/NNAPI-ExecutionProvider.html
+- Third-party LaMa ONNX export details: https://huggingface.co/edgetools/lama
+
+### Prototype entry criteria
+
+1. Resolve model-weight redistribution rights before shipping weights; no legal assumption based solely on the code repository license.
+2. Select and pin the exact ONNX file, record source URL, license evidence, SHA-256, file size, input/output names and tensor shapes.
+3. Add the runtime only on a prototype branch; confirm Android ABI coverage and 16 KB page-size compatibility in the produced APK.
+4. Validate tensor normalization and mask polarity with synthetic tests before evaluating real drawings.
+5. Measure APK size, cold/warm latency, peak memory and failure fallback on the actual target phone. Do not enable NNAPI by default until parity and stability are demonstrated.
+
 ## Proposed architecture
 
 1. Define a LocalInpaintingEngine boundary in Dart and a result type that carries output image, engine identifier, elapsed time, input dimensions, and a safe failure reason. Never include image pixels or file paths in telemetry.
