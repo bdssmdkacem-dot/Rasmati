@@ -26,6 +26,10 @@ jobs:
       - name: Prepare offline AI model assets
         run: bash tool/prepare_ai_assets.sh
       - run: dart run flutter_launcher_icons
+      - name: Validate local model tooling syntax
+        run: |
+          bash -n tool/fetch_lama_model.sh
+          python3 -m py_compile tool/evaluate_lama.py
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
