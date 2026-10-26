@@ -29,6 +29,15 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 7. **Device acceptance:** build and install the APK, then inspect real drawings on an Android phone, including thin lines, pale colors, overlapping limbs, and non-human drawings. Record failures and fix them before release.
 8. **Export:** implement MP4 rendering with correct frame timing, dimensions, and audio policy; test that exported videos open and play before advertising export as available.
 
+## Rig-mask validation update — 2026-10-26
+
+- Added filled polygon masks alongside the existing narrow correction brush in `lib/character_part_editor.dart`.
+- Added a preflight validator in `lib/rig_mask_validation.dart` and unit tests in `test/rig_mask_validation_test.dart` for empty masks, fewer than two usable parts, unknown part IDs, negative counts, and valid masks.
+- The editor now rejects empty or too-small masks for any part the user attempted to mark before it subtracts source pixels from the base or opens the joint preview.
+- The earlier CI failure was confirmed in the log: `List<Point<int>>` was incompatible with the image package's `List<Point>`; polygon rasterization was changed to use `img.Point`.
+- **Not complete:** this is still manual polygon segmentation, not automatic semantic segmentation. Hidden pixels behind limbs are not reconstructed yet, and no representative-drawing visual review or physical Android test has passed. Do not merge this branch or claim commercial animation quality based on compilation alone.
+- Current verification for the latest branch revision is pending: [latest CI run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379585178).
+
 ## Next development order
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
