@@ -266,3 +266,13 @@ After each substantial change:
 - Updated README to state the critical limitation: color propagation reduces cutout holes but cannot reconstruct actual hidden anatomy or complex original line art. It is not a semantic AI inpainting model.
 - Latest CI at the time of this note is [run #147](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386422204). Flutter setup and SVG rendering started successfully; dependency resolution, analyze, tests, and APK build are still pending. No success claim for this new code yet.
 - Visual wave/walk/nod review on multiple drawings and physical Android install remain outstanding. PR #1 remains unmerged.
+
+
+## 2026-10-26 — Structure-aware exemplar inpainting
+
+- Replaced the earlier local color propagation implementation with patch-based exemplar inpainting. The fill frontier prioritizes pixels near strong local gradients, compares candidate intact patches against the known neighborhood, then copies matched patch pixels into the cutout.
+- Added an incremental frontier set to avoid rescanning every image pixel for each fill iteration.
+- Added a regression test for continuing a one-pixel black line through a cutout, alongside tests for basic fill, untouched unrelated transparency, source immutability, and invalid mask dimensions.
+- Updated README with the algorithm and explicit limitation: this is classical patch-based inpainting, not a learned semantic model; unique hidden anatomy and complex details cannot be guaranteed.
+- Current CI for the most recent docs/test revision: [run #150](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386826159). It remains in progress; the new implementation is not yet verified by CI.
+- **Still not verified:** actual wave/walk/nod visual regression on representative artwork and APK install/test on a physical Android device. Keep PR #1 open and unmerged.
