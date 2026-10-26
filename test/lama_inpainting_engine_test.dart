@@ -28,7 +28,7 @@ void main() {
       expect(result.height, source.height);
       for (var y = 0; y < source.height; y++) {
         for (var x = 0; x < source.width; x++) {
-          expect(result.getPixel(x, y), source.getPixel(x, y));
+          expect(result.getPixel(x, y).toString(), source.getPixel(x, y).toString());
         }
       }
       await engine.dispose();
