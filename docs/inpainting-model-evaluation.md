@@ -87,6 +87,14 @@ For each image, keep the original and create ground-truth masks by hiding known 
 
 **Release gates:** flutter analyze, flutter test, debug APK build, reproducible model checksum/license audit, passing unit/integration tests, saved visual regression artifacts for the drawing set, and physical Android testing. Wave/walk/nod must show no exposed holes, duplicate/ghost limbs, or unacceptable seams on the approved drawings. Do not merge PR #1 until these gates pass.
 
+## Prototype implementation update (2026-10-26)
+
+- Added a local-only `LamaInpaintingEngine` prototype using `flutter_onnxruntime` and the CPU execution provider. It accepts a local model path, checks input/output names, uses a fixed 512×512 NCHW RGB image plus a 1-channel mask, and composites only the requested mask back into the original image. The engine does not download artwork or model weights and does not perform network requests.
+- Added a model lock record and an explicit opt-in fetch script pinned to the `Carve/LaMa-ONNX` revision and SHA-256. The downloaded model goes into `.local_models/`, not Flutter assets, to avoid accidentally bundling a 208 MB model in every APK. The script verifies SHA-256 before moving the artifact into place.
+- The selected model host declares Apache-2.0 and provides a SHA-256 for `lama_fp32.onnx`, but that is a third-party model-host declaration, not independent legal clearance. Training-data rights and exact weight redistribution rights remain a release blocker until verified. Do not bundle or distribute the weights yet.
+- Added guard tests for empty masks, mismatched masks, unloaded-model errors, and source immutability. These tests do not prove inference correctness; model-backed tests still require the verified ONNX file.
+- CI must now validate the new runtime dependency and Dart API. Runtime tensor names, normalization, output range, APK size, visual quality and device performance remain unverified until the model-backed test run and physical-phone test.
+
 ## Current status
 
 - The code currently uses classical exemplar-based inpainting; it is not yet connected to a learned neural model.
