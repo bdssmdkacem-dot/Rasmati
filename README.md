@@ -29,14 +29,14 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 7. **Device acceptance:** build and install the APK, then inspect real drawings on an Android phone, including thin lines, pale colors, overlapping limbs, and non-human drawings. Record failures and fix them before release.
 8. **Export:** implement MP4 rendering with correct frame timing, dimensions, and audio policy; test that exported videos open and play before advertising export as available.
 
-## Rig-mask validation and hidden-region repair — 2026-10-26
+## Rig-mask validation and structure-aware hidden-region repair — 2026-10-26
 
 - Added filled polygon masks and a preflight validator with unit tests for empty masks, too few usable parts, unknown IDs, negative counts, and valid masks.
-- Added **automatic local inpainting** for pixels removed by the rig masks. The algorithm propagates nearby visible colors inward, while leaving unrelated transparent background untouched. Unit tests cover pixel filling, source immutability, untouched transparent background, and invalid mask dimensions.
-- Added optional manual clone patches for cases where the automatic fill is too soft or misses detail. Source patches that overlap moving-part masks too heavily are rejected.
-- **Important quality limitation:** local color propagation can fill a hole and reduce transparent gaps, but it cannot infer the actual hidden anatomy or faithfully restore complex line art. This is a fallback repair, not AI semantic reconstruction. Each real drawing still needs visual review and, where necessary, manual patch refinement.
-- CI passed earlier for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: `flutter analyze`, `flutter test`, debug APK build, and artifact upload succeeded. That result predates the new inpainting code; latest-head CI is pending here: [latest run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386356540).
-- **Still blocked:** wave/walk/nod have not been visually accepted on representative real drawings, and no physical Android installation/test has been recorded. Keep PR #1 open and do not merge based on CI alone.
+- Replaced simple neighbor-color propagation with **exemplar-based patch inpainting** in `lib/transparent_region_inpainting.dart`. It selects a fill-frontier, gives local image gradients extra priority, compares candidate intact patches against known pixels around the hole, and copies matched patch pixels into the missing region. A maintained frontier avoids rescanning the entire canvas on every fill step.
+- Added unit tests for hole fill, untouched external transparency, source immutability, and invalid mask dimensions. Existing manual clone patches remain available for correction.
+- **Quality limitation:** this is a classical structure-aware patch method, not a learned inpainting model. It can continue nearby lines/textures when a similar source patch exists, but it cannot reliably invent hidden anatomy or reconstruct unique facial/clothing details. It can also repeat patterns or produce seams. Visual acceptance on real drawings is mandatory.
+- CI passed earlier for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`; that result predates the inpainting changes. Latest relevant run: [CI run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386718680). At last check it was still in progress, so analyze/tests/APK for this version are not yet confirmed.
+- **Still blocked:** wave/walk/nod have not been visually accepted on representative drawings, and no physical Android install/test has been recorded. Keep PR #1 open and do not merge based on CI alone.
 
 ## Next development order
 
