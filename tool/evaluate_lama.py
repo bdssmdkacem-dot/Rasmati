@@ -11,9 +11,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
-import resource
 import time
+try:
+    import resource
+except ImportError:  # Windows has no resource module.
+    resource = None
 from pathlib import Path
 
 import numpy as np
@@ -189,7 +191,7 @@ def main():
         "input_shapes": {x.name: x.shape for x in session.get_inputs()},
         "output_names": [x.name for x in session.get_outputs()],
         "output_shapes": {x.name: x.shape for x in session.get_outputs()},
-        "peak_rss_kib_process_high_water_mark": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "peak_rss_process_high_water_mark": (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss if resource else None),
         "cases": results,
         "warning": "Synthetic fixtures are not a substitute for visual review of permissioned real drawings or on-device Android measurements.",
     }
