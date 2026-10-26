@@ -42,6 +42,18 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 
 The current fallback is a classical exemplar-based method. A **local-only LaMa ONNX prototype** now lives in `lib/lama_inpainting_engine.dart` and uses `flutter_onnxruntime` on CPU. The model itself is intentionally not committed or bundled. Review [the model evaluation and privacy plan](docs/inpainting-model-evaluation.md) and [pinned model lock](docs/lama-model-lock.json) first. To fetch the pinned ~208 MB artifact for local experiments only, run `bash tool/fetch_lama_model.sh`; the script verifies SHA-256 and stores it under ignored `.local_models/`. The host declares Apache-2.0, but redistribution/training-data rights are not yet independently cleared. Do not ship or bundle the weights yet. The prototype's tensor contract, visual quality, memory, and latency still need model-backed tests and physical-device validation. All inference is intended to remain on-device; no drawing is uploaded.
 
+For offline desktop artifact/fixture checks after the model rights are approved for local evaluation:
+
+```sh
+python -m pip install -r tool/requirements-lama-eval.txt
+bash tool/fetch_lama_model.sh
+python tool/evaluate_lama.py
+# Optional real drawing and a same-size binary mask (white = removed region):
+python tool/evaluate_lama.py --image /path/to/drawing.png --mask /path/to/mask.png
+``
+
+The harness verifies the pinned SHA-256 and tensor names/shapes, generates line/face/limb fixtures, saves original/mask/repaired/comparison PNGs and a JSON report under `build/lama-evaluation/`. Synthetic fixtures are not real-artwork acceptance; Android latency/memory must be measured separately on the target phone.
+
 ## Next development order
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
