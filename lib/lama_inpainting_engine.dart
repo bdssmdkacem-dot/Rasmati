@@ -77,7 +77,7 @@ class LamaInpaintingEngine {
       base,
       width: modelWidth,
       height: modelHeight,
-      interpolation: img.Interpolation.linear,
+      interpolation: img.Interpolation.nearest,
     );
     final imageTensorData = Float32List(3 * modelWidth * modelHeight);
     final maskTensorData = Float32List(modelWidth * modelHeight);
