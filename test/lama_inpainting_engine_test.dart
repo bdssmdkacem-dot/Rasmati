@@ -28,7 +28,12 @@ void main() {
       expect(result.height, source.height);
       for (var y = 0; y < source.height; y++) {
         for (var x = 0; x < source.width; x++) {
-          expect(result.getPixel(x, y).toString(), source.getPixel(x, y).toString());
+          final actual = result.getPixel(x, y);
+          final expected = source.getPixel(x, y);
+          expect(actual.r, expected.r);
+          expect(actual.g, expected.g);
+          expect(actual.b, expected.b);
+          expect(actual.a, expected.a);
         }
       }
       await engine.dispose();
@@ -58,7 +63,10 @@ void main() {
     test('never mutates the original image during no-op processing', () async {
       final before = List.generate(
         source.height,
-        (y) => List.generate(source.width, (x) => source.getPixel(x, y).toString()),
+        (y) => List.generate(source.width, (x) {
+          final p = source.getPixel(x, y);
+          return [p.r, p.g, p.b, p.a];
+        }),
       );
       final engine = LamaInpaintingEngine();
       await engine.inpaint(
@@ -67,7 +75,10 @@ void main() {
       );
       final after = List.generate(
         source.height,
-        (y) => List.generate(source.width, (x) => source.getPixel(x, y).toString()),
+        (y) => List.generate(source.width, (x) {
+          final p = source.getPixel(x, y);
+          return [p.r, p.g, p.b, p.a];
+        }),
       );
       expect(after, before);
       await engine.dispose();
