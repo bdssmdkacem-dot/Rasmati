@@ -276,3 +276,13 @@ After each substantial change:
 - Updated README with the algorithm and explicit limitation: this is classical patch-based inpainting, not a learned semantic model; unique hidden anatomy and complex details cannot be guaranteed.
 - Current CI for the most recent docs/test revision: [run #150](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386826159). It remains in progress; the new implementation is not yet verified by CI.
 - **Still not verified:** actual wave/walk/nod visual regression on representative artwork and APK install/test on a physical Android device. Keep PR #1 open and unmerged.
+
+
+## 2026-10-26 — Neural inpainting candidate evaluation
+
+- Added [docs/inpainting-model-evaluation.md](docs/inpainting-model-evaluation.md) comparing the current patch fallback, LaMa/big-lama, Qualcomm LaMa-Dilated, and hosted APIs.
+- Current decision: prototype a genuine learned model locally, with LaMa/big-lama as the first candidate to validate; Qualcomm's mobile LaMa-Dilated is a benchmark candidate only because its documented CelebAHQ domain may not suit children's drawings. No model has been integrated or approved yet.
+- Privacy requirement documented: no drawing, crop, mask, embedding, or artwork-bearing telemetry may leave the device by default. Any future remote option requires separate explicit opt-in before upload. No hosted API is in the current plan.
+- Proposed runtime must be pinned/checksum-verified, license-reviewed, run on-device, composite only inside the removed mask, and fall back to local exemplar repair on failure. A preview/undo is required before accepting generated pixels.
+- Latest CI triggered for evaluation-doc commit: [run #159](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40387083449), currently queued. No current-head analyze/test/APK pass is confirmed.
+- PR #1 remains open and unmerged. Real-artwork visual regression and physical Android testing are still release gates.
