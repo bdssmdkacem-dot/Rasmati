@@ -66,37 +66,50 @@ class TransparentRegionInpainting {
     }
     if (sources.isEmpty) return result;
 
-    for (var iteration = 0; iteration < maxIterations; iteration++) {
+    final frontier = <int>{};
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        final i = idx(x, y);
+        if (!targets[i] || known[i]) continue;
+        for (var dy = -1; dy <= 1; dy++) {
+          for (var dx = -1; dx <= 1; dx++) {
+            if (inBounds(x + dx, y + dy) && known[idx(x + dx, y + dy)]) {
+              frontier.add(i);
+            }
+          }
+        }
+      }
+    }
+
+    for (var iteration = 0; iteration < maxIterations && frontier.isNotEmpty; iteration++) {
       var bestX = -1, bestY = -1, bestPriority = -1.0;
       // Pick a fill-frontier pixel. A high gradient near the boundary increases
       // priority so line/edge structures get handled before flat regions.
-      for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-          final targetIndex = idx(x, y);
-          if (!targets[targetIndex] || known[targetIndex]) continue;
-          var knownNeighbors = 0;
-          for (var dy = -1; dy <= 1; dy++) {
-            for (var dx = -1; dx <= 1; dx++) {
-              if ((dx == 0 && dy == 0) || !inBounds(x + dx, y + dy)) continue;
-              if (known[idx(x + dx, y + dy)]) knownNeighbors++;
-            }
+      for (final targetIndex in frontier) {
+        if (known[targetIndex]) continue;
+        final x = targetIndex % width, y = targetIndex ~/ width;
+        var knownNeighbors = 0;
+        for (var dy = -1; dy <= 1; dy++) {
+          for (var dx = -1; dx <= 1; dx++) {
+            if ((dx == 0 && dy == 0) || !inBounds(x + dx, y + dy)) continue;
+            if (known[idx(x + dx, y + dy)]) knownNeighbors++;
           }
-          if (knownNeighbors == 0) continue;
-          final left = inBounds(x - 1, y) && known[idx(x - 1, y)]
-              ? result.getPixel(x - 1, y).luminance.toDouble() : 0.0;
-          final right = inBounds(x + 1, y) && known[idx(x + 1, y)]
-              ? result.getPixel(x + 1, y).luminance.toDouble() : left;
-          final up = inBounds(x, y - 1) && known[idx(x, y - 1)]
-              ? result.getPixel(x, y - 1).luminance.toDouble() : 0.0;
-          final down = inBounds(x, y + 1) && known[idx(x, y + 1)]
-              ? result.getPixel(x, y + 1).luminance.toDouble() : up;
-          final gradient = (right - left).abs() + (down - up).abs();
-          final priority = knownNeighbors + gradient / 255.0;
-          if (priority > bestPriority) {
-            bestPriority = priority;
-            bestX = x;
-            bestY = y;
-          }
+        }
+        if (knownNeighbors == 0) continue;
+        final left = inBounds(x - 1, y) && known[idx(x - 1, y)]
+            ? result.getPixel(x - 1, y).luminance.toDouble() : 0.0;
+        final right = inBounds(x + 1, y) && known[idx(x + 1, y)]
+            ? result.getPixel(x + 1, y).luminance.toDouble() : left;
+        final up = inBounds(x, y - 1) && known[idx(x, y - 1)]
+            ? result.getPixel(x, y - 1).luminance.toDouble() : 0.0;
+        final down = inBounds(x, y + 1) && known[idx(x, y + 1)]
+            ? result.getPixel(x, y + 1).luminance.toDouble() : up;
+        final gradient = (right - left).abs() + (down - up).abs();
+        final priority = knownNeighbors + gradient / 255.0;
+        if (priority > bestPriority) {
+          bestPriority = priority;
+          bestX = x;
+          bestY = y;
         }
       }
       if (bestX < 0) break;
@@ -130,6 +143,7 @@ class TransparentRegionInpainting {
       if (sourceX < 0) break;
 
       var filledAny = false;
+      final newlyFilled = <int>[];
       for (var dy = -radius; dy <= radius; dy++) {
         for (var dx = -radius; dx <= radius; dx++) {
           final tx = bestX + dx, ty = bestY + dy;
@@ -141,7 +155,20 @@ class TransparentRegionInpainting {
           result.setPixelRgba(tx, ty, pixel.r.toInt(), pixel.g.toInt(),
               pixel.b.toInt(), pixel.a.toInt());
           known[targetIndex] = true;
+          newlyFilled.add(targetIndex);
+          frontier.remove(targetIndex);
           filledAny = true;
+        }
+      }
+      for (final filledIndex in newlyFilled) {
+        final fx = filledIndex % width, fy = filledIndex ~/ width;
+        for (var dy = -1; dy <= 1; dy++) {
+          for (var dx = -1; dx <= 1; dx++) {
+            final nx = fx + dx, ny = fy + dy;
+            if (!inBounds(nx, ny)) continue;
+            final ni = idx(nx, ny);
+            if (targets[ni] && !known[ni]) frontier.add(ni);
+          }
         }
       }
       // Prevent a malformed mask/source configuration from spinning forever.
@@ -151,6 +178,7 @@ class TransparentRegionInpainting {
         result.setPixelRgba(bestX, bestY, fallback.r.toInt(), fallback.g.toInt(),
             fallback.b.toInt(), 255);
         known[targetIndex] = true;
+        frontier.remove(targetIndex);
       }
     }
     return result;
