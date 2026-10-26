@@ -1,6 +1,20 @@
 # Development Progress — Rasmati
 
-Last updated: 2026-10-09
+## 2026-10-26 rigging validation pass
+
+- Issue #2: [Rebuild character rigging around filled masks and hidden-pixel repair](https://github.com/bdssmdkacem-dot/Rasmati/issues/2) remains open.
+- Added closed filled-polygon masks to `lib/character_part_editor.dart`, retaining the correction brush and full-canvas normalized coordinates.
+- Fixed the image-library polygon vertex type after the CI log identified `List<Point<int>>` versus `List<Point>`.
+- Added `lib/rig_mask_validation.dart` and `test/rig_mask_validation_test.dart`; checks cover empty/too-small masks, fewer than two usable parts, unknown IDs, negative pixel counts, and valid masks.
+- The editor now checks the alpha-pixel count for every part the user attempted to mark before removing source pixels from the base or opening the joint preview.
+- README updated with the implementation and known gaps.
+- Current CI for code + tests is pending: [run #139](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379585178). Older run #135 failed at static analysis due to the polygon point type; do not cite that run as passing.
+- Hidden-pixel reconstruction remains unresolved. No clone/repair workflow has been implemented yet; polygon masks alone cannot restore linework/background hidden behind limbs.
+- No real-drawing visual regression or physical Android install/test has been performed in this pass. Keep PR #1 unmerged and issue #2 open.
+- Next: wait for current CI; fix any analyzer/test/build failures. Then implement a deliberate hidden-region repair workflow (not a fake auto-fill), add fixture-based visual comparisons for wave/walk/nod, and install the resulting APK on a physical Android device.
+
+
+Last updated: 2026-10-26
 
 This file is the hand-off record for continuing work in a new chat. Update it after each meaningful change, fix, or verification.
 
