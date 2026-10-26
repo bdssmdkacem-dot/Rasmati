@@ -296,3 +296,12 @@ After each substantial change:
 - License status is still **not cleared for commercial redistribution**: the model host labels the export Apache-2.0, but the exact pretrained-weight and training-data rights require independent confirmation. Treat as local evaluation only until resolved.
 - CI runs for this series are in progress; no current-head analyzer/test/APK pass has been confirmed at this checkpoint. The model-backed tensor contract and visual quality are not yet tested because the model artifact is not part of the repository.
 - Still required: finish CI on the newest commit; obtain and validate the pinned artifact locally; verify its actual input/output names, shapes, normalization and mask polarity; run a reproducible suite covering lines, faces and limbs; save before/after images; measure cold/warm latency and memory; test the APK on the actual Android phone. PR #1 remains open; do not merge before all gates pass.
+
+
+## LaMa artifact evaluation harness — 2026-10-26
+
+- Added `tool/evaluate_lama.py` with pinned Python dependencies in `tool/requirements-lama-eval.txt`. It verifies the local model checksum and tensor names/shapes, runs line/face/limb synthetic fixtures, and saves original/mask/repaired/comparison images plus JSON metrics. It can also accept a permissioned real drawing and its mask. All output remains local.
+- The harness deliberately fails on tensor-contract mismatches and suspicious normalized output rather than silently compositing dark or malformed results. Synthetic fixture quality is not real-drawing acceptance, and desktop metrics are not Android metrics.
+- README and evaluation documentation now include local commands. No model binary was committed or added to Flutter assets.
+- Newest CI run at this checkpoint: [run #179](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40388436914), still in progress; GitHub Actions is spending time in setup and no current-head analyze/test/APK result is confirmed.
+- Remaining gates: verify exact model contract from the downloaded pinned artifact; resolve model-weight/training-data redistribution rights; run the harness and visually inspect the saved comparisons; test line/face/limb masks from permissioned real drawings; measure latency/memory on the physical Android phone; finish CI and test the produced APK on-device. PR #1 remains open and unmerged.
