@@ -334,6 +334,36 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         return;
       }
 
+      // Do not copy a source patch that is mostly covered by moving-part
+      // masks; that would clone the limb itself and create a visible ghost.
+      for (final patch in _repairPatches) {
+        final sx = (patch.source.dx * (width - 1)).round();
+        final sy = (patch.source.dy * (height - 1)).round();
+        final radius = math.max(1, (patch.radius * math.min(width, height)).round());
+        var sampled = 0;
+        var covered = 0;
+        for (var dy = -radius; dy <= radius; dy++) {
+          for (var dx = -radius; dx <= radius; dx++) {
+            if (dx * dx + dy * dy > radius * radius) continue;
+            final x = sx + dx, y = sy + dy;
+            if (x < 0 || y < 0 || x >= width || y >= height) continue;
+            sampled++;
+            for (final mask in masks.values) {
+              if (mask.getPixel(x, y).a > 0) { covered++; break; }
+            }
+          }
+        }
+        if (sampled == 0 || covered / sampled > 0.25) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('اختر مصدر ترميم سليمًا بعيدًا عن أجزاء الشخصية المتحركة.'),
+              behavior: SnackBarBehavior.floating,
+            ));
+          }
+          return;
+        }
+      }
+
       // Keep a deterministic owner for removing pixels from the base image,
       // but preserve painted overlap in every part layer. Shared pixels at
       // shoulders, elbows, hips and knees help prevent transparent cracks
