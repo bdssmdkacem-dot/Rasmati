@@ -40,7 +40,7 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 
 ## Neural inpainting evaluation
 
-The current repair code is a classical exemplar-based method, not a neural model. See [the local inpainting model evaluation and privacy plan](docs/inpainting-model-evaluation.md) for candidate assessment, offline-only architecture, test dataset, and release gates. No drawing is sent to a hosted service by this plan; any future remote processing would require separate explicit consent.
+The current fallback is a classical exemplar-based method. A **local-only LaMa ONNX prototype** now lives in `lib/lama_inpainting_engine.dart` and uses `flutter_onnxruntime` on CPU. The model itself is intentionally not committed or bundled. Review [the model evaluation and privacy plan](docs/inpainting-model-evaluation.md) and [pinned model lock](docs/lama-model-lock.json) first. To fetch the pinned ~208 MB artifact for local experiments only, run `bash tool/fetch_lama_model.sh`; the script verifies SHA-256 and stores it under ignored `.local_models/`. The host declares Apache-2.0, but redistribution/training-data rights are not yet independently cleared. Do not ship or bundle the weights yet. The prototype's tensor contract, visual quality, memory, and latency still need model-backed tests and physical-device validation. All inference is intended to remain on-device; no drawing is uploaded.
 
 ## Next development order
 
