@@ -12,15 +12,15 @@ Rasmati is an Android-first Flutter app that turns children's paper drawings int
 
 ## Current implementation status
 
-The repository contains the Flutter app scaffold, Arabic-first home screen, a paper-background removal workflow, a manually painted part-layer prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality.
+The repository contains the Flutter app scaffold, Arabic-first home screen, paper-background removal, a manually painted articulated-part prototype with pivot editing, and an entry point to an on-device AI animation engine. These are implementation milestones, not proof of production quality. The manual rig now distinguishes upper arms from forearms and thighs from lower legs, with a torso-rooted parent graph so body motion propagates through head, shoulders, elbows, hips and knees. This is an engineering milestone, not evidence that joints are visually seamless.
 
-The simple preview in the general animation studio still applies transforms to the whole image. The manual rig prototype is also limited: painted strokes are used as part masks, so it can leave gaps, cut off hands/head edges, and produce visible seams when parts rotate. Neither limitation should be disguised by extra decorative effects.
+The simple preview in the general animation studio still applies transforms to the whole image. The manual rig remains a prototype, not a commercial-quality rig: painted strokes are still the source of masks, default pivots are approximate, and the pipeline does not reconstruct pixels hidden behind moving parts. It can still leave gaps, cut off hands/head edges, or show seams. Adding lower-arm/lower-leg segments expands articulation but does not, by itself, solve segmentation, occlusion reconstruction, joint continuity, or visual quality.
 
 ## Motion redesign — acceptance criteria
 
 Treat animation quality as a core engineering milestone. Do not mark this complete based only on a successful build.
 
-1. **Character segmentation:** detect head, torso, upper/lower arms and legs (or equivalent articulated parts) from the drawing; provide correction tools for incorrect detections.
+1. **Character segmentation:** detect head, torso, upper/lower arms and legs (plus hands/feet where visible), or equivalent articulated parts, from the drawing; provide correction tools for incorrect detections. The current brush-marking flow is a correction/prototype path, not automatic segmentation.
 2. **Preserve the artwork:** retain original pixel colors and linework. Keep the source image immutable and work on derived layers.
 3. **Joint continuity:** create overlap/underlay or joint-aware reconstruction so rotations do not expose transparent wedges, white cut lines, or missing hands/head. Pivot adjustment alone is not a fix for incomplete masks.
 4. **Coordinated motion:** implement motion profiles for wave, walk, and nod with joint limits, eased timing, body balance, and coordinated limb motion. Avoid applying a single global rotation as a substitute for articulation.
@@ -29,11 +29,36 @@ Treat animation quality as a core engineering milestone. Do not mark this comple
 7. **Device acceptance:** build and install the APK, then inspect real drawings on an Android phone, including thin lines, pale colors, overlapping limbs, and non-human drawings. Record failures and fix them before release.
 8. **Export:** implement MP4 rendering with correct frame timing, dimensions, and audio policy; test that exported videos open and play before advertising export as available.
 
+## Rig-mask validation and structure-aware hidden-region repair — 2026-10-26
+
+- Added filled polygon masks and a preflight validator with unit tests for empty masks, too few usable parts, unknown IDs, negative counts, and valid masks.
+- Replaced simple neighbor-color propagation with **exemplar-based patch inpainting** in `lib/transparent_region_inpainting.dart`. It selects a fill-frontier, gives local image gradients extra priority, compares candidate intact patches against known pixels around the hole, and copies matched patch pixels into the missing region. A maintained frontier avoids rescanning the entire canvas on every fill step.
+- Added unit tests for hole fill, untouched external transparency, source immutability, and invalid mask dimensions. Existing manual clone patches remain available for correction.
+- **Quality limitation:** this is a classical structure-aware patch method, not a learned inpainting model. It can continue nearby lines/textures when a similar source patch exists, but it cannot reliably invent hidden anatomy or reconstruct unique facial/clothing details. It can also repeat patterns or produce seams. Visual acceptance on real drawings is mandatory.
+- CI passed earlier for commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`; that result predates the inpainting changes. Latest relevant run: [CI run](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386718680). At last check it was still in progress, so analyze/tests/APK for this version are not yet confirmed.
+- **Still blocked:** wave/walk/nod have not been visually accepted on representative drawings, and no physical Android install/test has been recorded. Keep PR #1 open and do not merge based on CI alone.
+
+## Neural inpainting evaluation
+
+The current fallback is a classical exemplar-based method. A **local-only LaMa ONNX prototype** now lives in `lib/lama_inpainting_engine.dart` and uses `flutter_onnxruntime` on CPU. The model itself is intentionally not committed or bundled. Review [the model evaluation and privacy plan](docs/inpainting-model-evaluation.md) and [pinned model lock](docs/lama-model-lock.json) first. To fetch the pinned ~208 MB artifact for local experiments only, run `bash tool/fetch_lama_model.sh`; the script verifies SHA-256 and stores it under ignored `.local_models/`. The host declares Apache-2.0, but redistribution/training-data rights are not yet independently cleared. Do not ship or bundle the weights yet. The prototype's tensor contract, visual quality, memory, and latency still need model-backed tests and physical-device validation. All inference is intended to remain on-device; no drawing is uploaded.
+
+For offline desktop artifact/fixture checks after the model rights are approved for local evaluation:
+
+```sh
+python -m pip install -r tool/requirements-lama-eval.txt
+bash tool/fetch_lama_model.sh
+python tool/evaluate_lama.py
+# Optional real drawing and a same-size binary mask (white = removed region):
+python tool/evaluate_lama.py --image /path/to/drawing.png --mask /path/to/mask.png
+``
+
+The harness verifies the pinned SHA-256 and tensor names/shapes, generates line/face/limb fixtures, saves original/mask/repaired/comparison PNGs and a JSON report under `build/lama-evaluation/`. Synthetic fixtures are not real-artwork acceptance; Android latency/memory must be measured separately on the target phone.
+
 ## Next development order
 
 1. Inspect and test the current AI annotation flow and the saved-layer pipeline.
-2. Replace stroke-only part masks with proper segmentation masks plus joint-aware overlap/reconstruction.
-3. Connect corrected masks and pivots to the coordinated motion engine.
+2. Replace stroke-only part masks with reliable segmentation masks plus joint-aware overlap and occlusion reconstruction; keep the current articulated segments as a test harness, not the final quality bar.
+3. The initial torso-rooted parent graph and ancestor-transform propagation are implemented. Still required: explicit wrist/ankle endpoints, per-drawing pivot fitting, hierarchy interaction tests on actual artwork, and validation that the rendering transform order does not clip or duplicate pixels.
 4. Add regression tests and run `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
 5. Verify the animation visually on an Android device before moving to MP4 export or claiming production readiness.
 

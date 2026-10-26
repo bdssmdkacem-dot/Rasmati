@@ -1,6 +1,20 @@
 # Development Progress — Rasmati
 
-Last updated: 2026-10-09
+## 2026-10-26 rigging validation pass
+
+- Issue #2: [Rebuild character rigging around filled masks and hidden-pixel repair](https://github.com/bdssmdkacem-dot/Rasmati/issues/2) remains open.
+- Added closed filled-polygon masks to `lib/character_part_editor.dart`, retaining the correction brush and full-canvas normalized coordinates.
+- Fixed the image-library polygon vertex type after the CI log identified `List<Point<int>>` versus `List<Point>`.
+- Added `lib/rig_mask_validation.dart` and `test/rig_mask_validation_test.dart`; checks cover empty/too-small masks, fewer than two usable parts, unknown IDs, negative pixel counts, and valid masks.
+- The editor now checks the alpha-pixel count for every part the user attempted to mark before removing source pixels from the base or opening the joint preview.
+- README updated with the implementation and known gaps.
+- Current CI for code + tests is pending: [run #139](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379585178). Older run #135 failed at static analysis due to the polygon point type; do not cite that run as passing.
+- Hidden-pixel reconstruction remains unresolved. No clone/repair workflow has been implemented yet; polygon masks alone cannot restore linework/background hidden behind limbs.
+- No real-drawing visual regression or physical Android install/test has been performed in this pass. Keep PR #1 unmerged and issue #2 open.
+- Next: wait for current CI; fix any analyzer/test/build failures. Then implement a deliberate hidden-region repair workflow (not a fake auto-fill), add fixture-based visual comparisons for wave/walk/nod, and install the resulting APK on a physical Android device.
+
+
+Last updated: 2026-10-26
 
 This file is the hand-off record for continuing work in a new chat. Update it after each meaningful change, fix, or verification.
 
@@ -200,3 +214,94 @@ After each substantial change:
 - Added `tool/prepare_ai_assets.sh` to stage the dependency's model and motion configuration assets at the root paths expected by the upstream code, and added the same preparation step to CI.
 - Added local build instructions to README.
 - Important: the upstream screen is a separate annotation/animation flow and its interface may not yet match Rasmati's Arabic styling. This is a real model-backed integration attempt, not a claim that animation quality has passed. CI must confirm dependency resolution, analysis, tests, and APK build; then a physical Android test must check model loading, segmentation, joints, and animation quality. No cloud API or paid service is configured.
+
+
+## 2026-10-23 — articulated limb expansion; commercial acceptance remains open
+
+- User explicitly rejected treating a small joint-overlap patch as a complete solution. The target is a comprehensive, commercial-quality character-motion system; do not advance to the next product phase until visual and device acceptance is met.
+- Expanded the manual rig part palette so each arm can be marked as upper arm + forearm, and each leg as thigh + lower leg. This allows elbow and knee motion rather than rotating only a single rigid arm/leg. Updated part labels in the editor and pivot editor.
+- Added default elbow/knee pivot locations in `lib/rig_geometry.dart`, lower-segment depth ordering, and coordinated forearm/lower-leg curves in `lib/motion_choreography.dart`. Added unit-test coverage for articulated part ordering, pivots, gait coupling, and finite motion curves.
+- Updated README acceptance language to make clear that articulated segments are a testable intermediate architecture, not a claim of production quality. Remaining foundational work includes dependable segmentation, occlusion reconstruction for pixels hidden behind limbs, per-drawing hierarchical joints, visual regression on representative drawings, and Android-device verification.
+- Commits on `fix/rig-preview-artifact-validation`: part split `695aac13158fb64db8cc8d68b427a62e904ab38d`; elbow/knee pivots `b4414989bd833c6a8d557aa15feb15b70b41360b`; articulated motion `428e61069fd5cae88a578ec9a4b57561fbeb675d`; pivot labels `ba000a3440d36e74d7bceb398b7126020cb84099`; choreography tests `95e2c8d0791d54fd315996cbe993fde383ecde60`; pivot tests `90d96bfbf8615cf642008ade24f11b04ba6bd50e`; forearm wave coordination `96cd962130408c42999e8474f620e7faf6a9dfdb`; README acceptance update `59224d8196d91f90c857ac0944d068360e990c4e`.
+- CI verification for the newest code/doc commits is pending. Check the latest Actions run before reporting build status. Do not infer that APK build succeeded from analyzer/tests alone.
+- Device and visual acceptance are not yet done: no representative drawing has been reviewed through the new upper/lower limb workflow, and no physical Android installation/test has been verified. Keep PR #1 in draft and do not merge to `main`.
+- Next engineering step: run the latest CI and fix all failures; then implement a hierarchical rig model (shoulder→elbow→wrist and hip→knee→ankle) and reliable joint/occlusion handling rather than relying on approximate full-canvas pivots. Commercial acceptance requires checking original-art preservation and seam-free movement across multiple real drawings and device screenshots before moving to MP4/export phase.
+
+
+- Follow-up implementation after the articulated-segment expansion: `lib/character_motion_preview.dart` and `lib/rig_joint_preview.dart` now apply a parent upper-arm/thigh transform to the matching forearm/lower-leg layer, so the child segment follows shoulder/hip rotation instead of rotating around a stationary image-space joint. Commits: `46a0013efd718fa36e45c703353efc42b2f91450` and `1ed2629404ea48a0453f9842a698082d6b3eb6f2`. This is a structural improvement, but it still needs CI and visual validation; it does not reconstruct hidden pixels or guarantee seamless joints.
+- README follow-up commit: `8b6390e960ca46d7cd725d39c38a414b6c87315f`.
+
+
+- Hierarchy follow-up: centralized the current parent graph in `RigGeometry.parentPart` and added tests for shoulder→forearm and hip→lower-leg links. The joint editor's segment labels now match the new part palette. Commits: `d107d79e127f01e55e9883ebc8036c23c46dd984`, `608b48e1b8d338ffb75b8a009119095bc4e9ff83`, `75473f53a06a9aadc96726be8dc2cbb83df03249`, `71832ae3573402d1594df7110263cc95982eefbc`, `06a0b043117c937236744bebfa25f4b5169cd753`.
+- Latest CI for these changes is still pending; newest known run: [run #125](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40002689892). The APK artifact is not yet verified for this code.
+- Important remaining gap: this rig still depends on manual full-canvas masks and approximate pivots. Parent-child transforms are now represented for elbows/knees, but robust occlusion repair, adaptive pivot placement, and real-drawing visual/device acceptance remain release blockers.
+
+
+## 2026-10-23 — acceptance contract locked; complete parent transform propagation
+
+- Acceptance gate confirmed with the user: no more treating a local overlap patch or a green build as completion. Do not start the next product phase until the animation system passes visual and Android-device acceptance at a commercial-quality bar.
+- Expanded the rig hierarchy from isolated elbow/knee parent pairs to a torso-rooted skeleton: torso → head, upper arms and thighs; upper arms → forearms; thighs → lower legs.
+- Motion preview now applies each segment's own transform plus the ordered transforms of all ancestors. This means torso sway/bounce is inherited by head, shoulders, hips, elbows and knees. The joint editor's test preview uses the same ancestor graph so testing a torso/upper-arm/thigh rotation affects descendants consistently.
+- Added unit tests for ancestor ordering and complete parent relationships in `test/rig_geometry_test.dart`.
+- Commits: hierarchy `903257783d6b8ae40172b43fec1b69ba331615c1`; motion ancestor propagation `79f83f0ec96731dbc9b8a8e6c5eb54232a2c0c06`; joint-preview ancestor propagation `cc2265914b75a62e078a94dcfe5e7eb8522c4c0f`; hierarchy tests `d8e3dec1bca0704f3f163dfc1e473a560e48963f`.
+- CI for this newest hierarchy code is pending. Earlier run #127 passed `flutter analyze` and `flutter test` and had started `flutter build apk --debug`, but that was for an earlier commit and does not prove the current code builds. Keep APK status unconfirmed until the latest run finishes and artifact upload is present.
+- Known commercial blockers remain: current masks are brush-painted rather than robust semantic segmentation; shared joint pixels can create duplicate/ghost contours; hidden artwork behind a rotating part is not reconstructed; default pivots need per-character fitting; no representative drawing has passed a visual regression review; no physical Android install has been confirmed. These are explicit acceptance blockers, not optional polish.
+
+
+## 2026-10-26 — CI verified; manual clone-repair added
+
+- Verified run [#142](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40379749960) on commit `53f9a3a753adf8d4b800b3ab079751c92b4d4304`: analyze, tests, debug APK build, and `rasmati-debug-apk` artifact upload all passed.
+- Added manual clone-repair interaction to the part editor on the current branch: select a clean source point, then a target point under a region expected to be uncovered by motion. Repair copies pixels from the original artwork into the cut-out base, after rig-mask subtraction.
+- Added a guard that refuses a source patch if more than 25% of its sampled circular area overlaps any moving-part mask, to reduce copying limb pixels into the background.
+- README updated with the actual passing CI evidence and explicit limitations.
+- **Important:** run #142 predates the clone-repair commits. CI for the latest head must pass separately. The repair workflow has not yet been visually inspected on real drawings; manual clone repair can leave seams and is not automatic hidden-anatomy reconstruction.
+- **Still not verified:** wave/walk/nod on multiple actual drawings, APK installation and interaction on a physical Android phone, and source-art preservation under motion. Keep PR #1 open and do not merge to `main` until those gates have evidence.
+
+
+## 2026-10-26 — Automatic local inpainting pass
+
+- Added `lib/transparent_region_inpainting.dart`: fills only pixels explicitly marked as removed by rig masks, propagating neighboring visible colors inward; unrelated transparent canvas pixels remain untouched.
+- Integrated inpainting into the saved base-layer pipeline before optional manual clone patches. The original source image remains unchanged.
+- Added `test/transparent_region_inpainting_test.dart` for hole fill, untouched external transparency, source immutability, and mismatched mask size.
+- Updated README to state the critical limitation: color propagation reduces cutout holes but cannot reconstruct actual hidden anatomy or complex original line art. It is not a semantic AI inpainting model.
+- Latest CI at the time of this note is [run #147](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386422204). Flutter setup and SVG rendering started successfully; dependency resolution, analyze, tests, and APK build are still pending. No success claim for this new code yet.
+- Visual wave/walk/nod review on multiple drawings and physical Android install remain outstanding. PR #1 remains unmerged.
+
+
+## 2026-10-26 — Structure-aware exemplar inpainting
+
+- Replaced the earlier local color propagation implementation with patch-based exemplar inpainting. The fill frontier prioritizes pixels near strong local gradients, compares candidate intact patches against the known neighborhood, then copies matched patch pixels into the cutout.
+- Added an incremental frontier set to avoid rescanning every image pixel for each fill iteration.
+- Added a regression test for continuing a one-pixel black line through a cutout, alongside tests for basic fill, untouched unrelated transparency, source immutability, and invalid mask dimensions.
+- Updated README with the algorithm and explicit limitation: this is classical patch-based inpainting, not a learned semantic model; unique hidden anatomy and complex details cannot be guaranteed.
+- Current CI for the most recent docs/test revision: [run #150](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40386826159). It remains in progress; the new implementation is not yet verified by CI.
+- **Still not verified:** actual wave/walk/nod visual regression on representative artwork and APK install/test on a physical Android device. Keep PR #1 open and unmerged.
+
+
+## 2026-10-26 — Neural inpainting candidate evaluation
+
+- Added [docs/inpainting-model-evaluation.md](docs/inpainting-model-evaluation.md) comparing the current patch fallback, LaMa/big-lama, Qualcomm LaMa-Dilated, and hosted APIs.
+- Current decision: prototype a genuine learned model locally, with LaMa/big-lama as the first candidate to validate; Qualcomm's mobile LaMa-Dilated is a benchmark candidate only because its documented CelebAHQ domain may not suit children's drawings. No model has been integrated or approved yet.
+- Privacy requirement documented: no drawing, crop, mask, embedding, or artwork-bearing telemetry may leave the device by default. Any future remote option requires separate explicit opt-in before upload. No hosted API is in the current plan.
+- Proposed runtime must be pinned/checksum-verified, license-reviewed, run on-device, composite only inside the removed mask, and fall back to local exemplar repair on failure. A preview/undo is required before accepting generated pixels.
+- Latest CI triggered for evaluation-doc commit: [run #159](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40387083449), currently queued. No current-head analyze/test/APK pass is confirmed.
+- PR #1 remains open and unmerged. Real-artwork visual regression and physical Android testing are still release gates.
+
+
+## Local LaMa ONNX prototype — 2026-10-26
+
+- Added `flutter_onnxruntime ^1.9.0` and `lib/lama_inpainting_engine.dart`: explicit local model path, CPU inference, input/output name and shape guards, mask-only compositing, tensor/session disposal, and no network path.
+- Added `test/lama_inpainting_engine_test.dart` for empty-mask no-op, mask-dimension rejection, unloaded-model failure, and source immutability.
+- Pinned a third-party ONNX export in `docs/lama-model-lock.json` and added `tool/fetch_lama_model.sh`. It downloads only when manually invoked, checks SHA-256, and stores the artifact in ignored `.local_models/`; model bytes are not committed or bundled.
+- License status is still **not cleared for commercial redistribution**: the model host labels the export Apache-2.0, but the exact pretrained-weight and training-data rights require independent confirmation. Treat as local evaluation only until resolved.
+- CI runs for this series are in progress; no current-head analyzer/test/APK pass has been confirmed at this checkpoint. The model-backed tensor contract and visual quality are not yet tested because the model artifact is not part of the repository.
+- Still required: finish CI on the newest commit; obtain and validate the pinned artifact locally; verify its actual input/output names, shapes, normalization and mask polarity; run a reproducible suite covering lines, faces and limbs; save before/after images; measure cold/warm latency and memory; test the APK on the actual Android phone. PR #1 remains open; do not merge before all gates pass.
+
+
+## LaMa artifact evaluation harness — 2026-10-26
+
+- Added `tool/evaluate_lama.py` with pinned Python dependencies in `tool/requirements-lama-eval.txt`. It verifies the local model checksum and tensor names/shapes, runs line/face/limb synthetic fixtures, and saves original/mask/repaired/comparison images plus JSON metrics. It can also accept a permissioned real drawing and its mask. All output remains local.
+- The harness deliberately fails on tensor-contract mismatches and suspicious normalized output rather than silently compositing dark or malformed results. Synthetic fixture quality is not real-drawing acceptance, and desktop metrics are not Android metrics.
+- README and evaluation documentation now include local commands. No model binary was committed or added to Flutter assets.
+- Newest CI run at this checkpoint: [run #179](https://github.com/bdssmdkacem-dot/Rasmati/actions/runs/40388436914), still in progress; GitHub Actions is spending time in setup and no current-head analyze/test/APK result is confirmed.
+- Remaining gates: verify exact model contract from the downloaded pinned artifact; resolve model-weight/training-data redistribution rights; run the harness and visually inspect the saved comparisons; test line/face/limb masks from permissioned real drawings; measure latency/memory on the physical Android phone; finish CI and test the produced APK on-device. PR #1 remains open and unmerged.

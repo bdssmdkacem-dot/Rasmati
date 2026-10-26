@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'motion_choreography.dart';
+import 'rig_geometry.dart';
 
 /// Local, non-destructive preview of the saved character layers.
 /// Motion is applied to each selected layer around its saved normalized pivot.
@@ -32,6 +34,7 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   String _motion = 'wave';
   bool _playing = true;
   bool _loading = true;
+  String? _loadError;
 
 
   @override
@@ -47,6 +50,64 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
   }
 
   Future<void> _loadPivots() async {
+    // Validate the saved rig before rendering. Missing layers must not silently
+    // look like a successful animation with body parts disappearing.
+    try {
+      final requiredFiles = <String>[
+        'base.png',
+        ...widget.partIds.map((id) => '$id.png'),
+      ];
+      for (final name in requiredFiles) {
+        final file = File('${widget.folder.path}/$name');
+        if (!await file.exists() || await file.length() == 0) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'ملف الشخصية مفقود أو فارغ: $name';
+              _loading = false;
+            });
+          }
+          return;
+        }
+
+        // Non-empty files may still be corrupt or use a mismatched canvas.
+        ui.Codec? codec;
+        try {
+          codec = await ui.instantiateImageCodec(await file.readAsBytes());
+          final frame = await codec.getNextFrame();
+          final width = frame.image.width;
+          final height = frame.image.height;
+          frame.image.dispose();
+          if (width != widget.imageWidth || height != widget.imageHeight) {
+            if (mounted) {
+              setState(() {
+                _loadError = 'أبعاد الملف $name لا تطابق أبعاد الرسمة الأصلية (${widget.imageWidth}×${widget.imageHeight}).';
+                _loading = false;
+              });
+            }
+            return;
+          }
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _loadError = 'تعذّر قراءة صورة الشخصية: $name';
+              _loading = false;
+            });
+          }
+          return;
+        } finally {
+          codec?.dispose();
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loadError = 'تعذّر التحقق من ملفات الشخصية المحفوظة.';
+          _loading = false;
+        });
+      }
+      return;
+    }
+
     for (final id in widget.partIds) {
       _pivots[id] = _defaultPivot(id);
     }
@@ -74,21 +135,43 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
     }
   }
 
-  Offset _defaultPivot(String id) {
-    switch (id) {
-      case 'head':
-        return const Offset(.5, .82);
-      case 'left_arm':
-        return const Offset(.24, .28);
-      case 'right_arm':
-        return const Offset(.76, .28);
-      case 'left_leg':
-        return const Offset(.42, .18);
-      case 'right_leg':
-        return const Offset(.58, .18);
-      default:
-        return const Offset(.5, .5);
+  Offset _defaultPivot(String id) => RigGeometry.defaultPivot(id);
+
+
+
+  Widget _applyPartTransform(
+    String id,
+    double phase,
+    Size size,
+    Widget child,
+  ) {
+    final pivot = _pivots[id] ?? _defaultPivot(id);
+    return Transform.translate(
+      offset: MotionChoreography.offsetFor(_motion, id, phase, size),
+      child: Transform.rotate(
+        angle: MotionChoreography.angleFor(_motion, id, phase),
+        alignment: Alignment(pivot.dx * 2 - 1, pivot.dy * 2 - 1),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildArticulatedLayer(String id, double phase, Size size) {
+    Widget layer = Image.file(
+      File('${widget.folder.path}/$id.png'),
+      fit: BoxFit.fill,
+      gaplessPlayback: true,
+      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
+
+    // Build from the selected segment outward through every ancestor. The
+    // torso's sway/bounce now propagates to shoulders, hips, head, elbows and
+    // knees rather than leaving the extremities behind in image space.
+    layer = _applyPartTransform(id, phase, size, layer);
+    for (final ancestor in RigGeometry.ancestorsOf(id)) {
+      layer = _applyPartTransform(ancestor, phase, size, layer);
     }
+    return layer;
   }
 
   @override
@@ -106,7 +189,26 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
         body: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : Column(
+              : _loadError != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.broken_image_outlined, size: 48),
+                            const SizedBox(height: 12),
+                            Text(_loadError!, textAlign: TextAlign.center),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'ارجع إلى تجهيز أجزاء الشخصية وأعد حفظها قبل تجربة الحركة.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
                   children: [
                     const Padding(
                       padding: EdgeInsets.all(12),
@@ -169,21 +271,10 @@ class _CharacterMotionPreviewState extends State<CharacterMotionPreview>
                                 for (final id in MotionChoreography.orderParts(widget.partIds))
                                   Positioned.fromRect(
                                     rect: rect,
-                                    child: Transform.translate(
-                                      offset: MotionChoreography.offsetFor(_motion, id, phase, Size(w, h)),
-                                      child: Transform.rotate(
-                                        angle: MotionChoreography.angleFor(_motion, id, phase),
-                                        alignment: Alignment(
-                                          (_pivots[id] ?? _defaultPivot(id)).dx * 2 - 1,
-                                          (_pivots[id] ?? _defaultPivot(id)).dy * 2 - 1,
-                                        ),
-                                        child: Image.file(
-                                          File('${widget.folder.path}/$id.png'),
-                                          fit: BoxFit.fill,
-                                          gaplessPlayback: true,
-                                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                        ),
-                                      ),
+                                    child: _buildArticulatedLayer(
+                                      id,
+                                      phase,
+                                      Size(w, h),
                                     ),
                                   ),
                               ],

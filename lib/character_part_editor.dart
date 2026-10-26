@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'rig_joint_preview.dart';
+import 'rig_mask_validation.dart';
+import 'transparent_region_inpainting.dart';
 
 class CharacterPartEditor extends StatefulWidget {
   const CharacterPartEditor({super.key, required this.imageFile});
@@ -32,18 +34,44 @@ class _RigStroke {
   final double radius;
 }
 
+class _RigPolygon {
+  _RigPolygon(this.partId, this.points);
+
+  final String partId;
+  final List<Offset> points;
+}
+
+class _RepairPatch {
+  const _RepairPatch({required this.source, required this.target, required this.radius});
+
+  final Offset source;
+  final Offset target;
+  final double radius;
+}
+
 class _CharacterPartEditorState extends State<CharacterPartEditor> {
   static const _parts = <_RigPart>[
     _RigPart('head', 'الرأس', Color(0xFFE85D75)),
     _RigPart('torso', 'الجذع', Color(0xFF6D5CE8)),
-    _RigPart('left_arm', 'الذراع الأيسر', Color(0xFF2D9CDB)),
-    _RigPart('right_arm', 'الذراع الأيمن', Color(0xFF20A477)),
-    _RigPart('left_leg', 'الساق اليسرى', Color(0xFFE89A32)),
-    _RigPart('right_leg', 'الساق اليمنى', Color(0xFF9B59B6)),
+    _RigPart('left_arm', 'العضد الأيسر', Color(0xFF2D9CDB)),
+    _RigPart('right_arm', 'العضد الأيمن', Color(0xFF20A477)),
+    _RigPart('left_forearm', 'الساعد الأيسر', Color(0xFF56B4E9)),
+    _RigPart('right_forearm', 'الساعد الأيمن', Color(0xFF63C7A3)),
+    _RigPart('left_leg', 'الفخذ الأيسر', Color(0xFFE89A32)),
+    _RigPart('right_leg', 'الفخذ الأيمن', Color(0xFF9B59B6)),
+    _RigPart('left_lower_leg', 'الساق السفلى اليسرى', Color(0xFFF0B65C)),
+    _RigPart('right_lower_leg', 'الساق السفلى اليمنى', Color(0xFFB887D0)),
   ];
 
   final List<_RigStroke> _strokes = [];
   final List<_RigStroke> _redo = [];
+  final List<_RigPolygon> _polygons = [];
+  final List<_RigPolygon> _redoPolygons = [];
+  final List<Offset> _polygonDraft = [];
+  final List<_RepairPatch> _repairPatches = [];
+  Offset? _repairSource;
+  bool _repairMode = false;
+  bool _polygonMode = true;
   String _selectedPart = 'head';
   double _brushRadius = 0.025;
   List<Offset>? _activePoints;
@@ -95,7 +123,48 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
     );
   }
 
+  void _addPolygonPoint(TapUpDetails details, Size size) {
+    final point = _normalisedPoint(details.localPosition, size);
+    if (point == null) return;
+    if (_repairMode) {
+      setState(() {
+        if (_repairSource == null) {
+          _repairSource = point;
+        } else {
+          _repairPatches.add(_RepairPatch(
+            source: _repairSource!, target: point, radius: _brushRadius,
+          ));
+          _repairSource = null;
+        }
+      });
+      return;
+    }
+    if (!_polygonMode) return;
+    setState(() {
+      _polygonDraft.add(point);
+      _redo.clear();
+      _redoPolygons.clear();
+    });
+  }
+
+  void _finishPolygon() {
+    if (_polygonDraft.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('أضف ثلاث نقاط على الأقل لإغلاق المنطقة.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    setState(() {
+      _polygons.add(_RigPolygon(_selectedPart, List.of(_polygonDraft)));
+      _polygonDraft.clear();
+      _redo.clear();
+      _redoPolygons.clear();
+    });
+  }
+
   void _startStroke(DragStartDetails details, Size size) {
+    if (_polygonMode) return;
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null) return;
     setState(() {
@@ -105,12 +174,14 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   }
 
   void _extendStroke(DragUpdateDetails details, Size size) {
+    if (_polygonMode) return;
     final point = _normalisedPoint(details.localPosition, size);
     if (point == null || _activePoints == null) return;
     setState(() => _activePoints = [..._activePoints!, point]);
   }
 
   void _finishStroke(DragEndDetails details) {
+    if (_polygonMode) return;
     final points = _activePoints;
     if (points == null || points.isEmpty) return;
     setState(() {
@@ -120,18 +191,29 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
   }
 
   void _undo() {
-    if (_strokes.isEmpty) return;
-    setState(() => _redo.add(_strokes.removeLast()));
+    if (_strokes.isEmpty && _polygons.isEmpty && _polygonDraft.isEmpty) return;
+    setState(() {
+      if (_polygonDraft.isNotEmpty) {
+        _polygonDraft.clear();
+      } else if (_polygons.isNotEmpty) {
+        _redoPolygons.add(_polygons.removeLast());
+      } else {
+        _redo.add(_strokes.removeLast());
+      }
+    });
   }
 
   void _redoStroke() {
-    if (_redo.isEmpty) return;
-    setState(() => _strokes.add(_redo.removeLast()));
+    if (_redoPolygons.isNotEmpty) {
+      setState(() => _polygons.add(_redoPolygons.removeLast()));
+    } else if (_redo.isNotEmpty) {
+      setState(() => _strokes.add(_redo.removeLast()));
+    }
   }
 
   Future<void> _saveRig() async {
     final source = _decoded;
-    if (source == null || _strokes.isEmpty || _saving) return;
+    if (source == null || (_strokes.isEmpty && _polygons.isEmpty) || _saving) return;
     setState(() => _saving = true);
     try {
       final width = source.width;
@@ -164,6 +246,125 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         }
       }
 
+      // Rasterize closed polygon regions as filled masks. These masks represent
+      // complete body-part areas; strokes remain available for narrow corrections.
+      for (final polygon in _polygons) {
+        if (polygon.points.length < 3) continue;
+        final vertices = polygon.points.map((point) => img.Point(
+          (point.dx * (width - 1)).round().clamp(0, width - 1).toInt(),
+          (point.dy * (height - 1)).round().clamp(0, height - 1).toInt(),
+        )).toList();
+        img.fillPolygon(masks[polygon.partId]!, vertices: vertices,
+          color: img.ColorRgba8(255, 255, 255, 255));
+      }
+
+      // Expand only stroke endpoints that meet another painted part. This
+      // creates a small shared pixel bridge at shoulders, elbows, hips and
+      // knees without dilating every limb into a visibly oversized silhouette.
+      for (final stroke in _strokes) {
+        if (stroke.points.length < 2) continue;
+        final radius = math.max(1, (stroke.radius * math.min(width, height)).round());
+        final jointRadius = math.max(radius + 1, (radius * 1.75).round());
+        final searchRadius = radius * 3;
+        final endpoints = [stroke.points.first, stroke.points.last];
+        for (final endpoint in endpoints) {
+          final cx = (endpoint.dx * (width - 1)).round();
+          final cy = (endpoint.dy * (height - 1)).round();
+          var meetsAnotherPart = false;
+          for (final other in _parts) {
+            if (other.id == stroke.partId) continue;
+            final otherMask = masks[other.id]!;
+            final minX = math.max(0, cx - searchRadius);
+            final maxX = math.min(width - 1, cx + searchRadius);
+            final minY = math.max(0, cy - searchRadius);
+            final maxY = math.min(height - 1, cy + searchRadius);
+            for (var y = minY; y <= maxY && !meetsAnotherPart; y++) {
+              for (var x = minX; x <= maxX; x++) {
+                final dx = x - cx;
+                final dy = y - cy;
+                if (dx * dx + dy * dy <= searchRadius * searchRadius &&
+                    otherMask.getPixel(x, y).a > 0) {
+                  meetsAnotherPart = true;
+                  break;
+                }
+              }
+            }
+            if (meetsAnotherPart) break;
+          }
+          if (meetsAnotherPart) {
+            img.fillCircle(
+              masks[stroke.partId]!,
+              x: cx,
+              y: cy,
+              radius: jointRadius,
+              color: img.ColorRgba8(255, 255, 255, 255),
+            );
+          }
+        }
+      }
+
+      // Validate every part the user attempted to draw before subtracting
+      // pixels from the base image or opening the joint/motion preview.
+      final intendedParts = <String>{
+        ..._strokes.map((stroke) => stroke.partId),
+        ..._polygons.map((polygon) => polygon.partId),
+      };
+      final opaqueCounts = <String, int>{};
+      for (final partId in intendedParts) {
+        var count = 0;
+        final mask = masks[partId]!;
+        for (var y = 0; y < height; y++) {
+          for (var x = 0; x < width; x++) {
+            if (mask.getPixel(x, y).a > 0) count++;
+          }
+        }
+        opaqueCounts[partId] = count;
+      }
+      final maskErrors = RigMaskValidation.validate(
+        expectedPartIds: intendedParts,
+        opaquePixelCounts: opaqueCounts,
+      );
+      if (maskErrors.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('تعذّر اعتماد التقسيم: ${maskErrors.take(3).join('؛ ')}'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ));
+        }
+        return;
+      }
+
+      // Do not copy a source patch that is mostly covered by moving-part
+      // masks; that would clone the limb itself and create a visible ghost.
+      for (final patch in _repairPatches) {
+        final sx = (patch.source.dx * (width - 1)).round();
+        final sy = (patch.source.dy * (height - 1)).round();
+        final radius = math.max(1, (patch.radius * math.min(width, height)).round());
+        var sampled = 0;
+        var covered = 0;
+        for (var dy = -radius; dy <= radius; dy++) {
+          for (var dx = -radius; dx <= radius; dx++) {
+            if (dx * dx + dy * dy > radius * radius) continue;
+            final x = sx + dx, y = sy + dy;
+            if (x < 0 || y < 0 || x >= width || y >= height) continue;
+            sampled++;
+            for (final mask in masks.values) {
+              if (mask.getPixel(x, y).a > 0) { covered++; break; }
+            }
+          }
+        }
+        if (sampled == 0 || covered / sampled > 0.25) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('اختر مصدر ترميم سليمًا بعيدًا عن أجزاء الشخصية المتحركة.'),
+              behavior: SnackBarBehavior.floating,
+            ));
+          }
+          return;
+        }
+      }
+
       // Keep a deterministic owner for removing pixels from the base image,
       // but preserve painted overlap in every part layer. Shared pixels at
       // shoulders, elbows, hips and knees help prevent transparent cracks
@@ -178,6 +379,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       }
 
       final base = img.Image.from(source);
+      final removedPixels = List<bool>.filled(width * height, false);
       final savedParts = <String>[];
       for (final part in _parts) {
         final layer = img.Image(width: width, height: height, numChannels: 4);
@@ -196,12 +398,56 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
             if (ownership[index] == part.id) {
               base.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(),
                   pixel.b.toInt(), 0);
+              removedPixels[index] = true;
             }
             hasPixels = true;
           }
         }
         if (hasPixels) savedParts.add(part.id);
         masks[part.id] = layer;
+      }
+
+      // Automatically propagate nearby visible colors into the cut-out areas.
+      // This is a local inpainting fallback, not semantic reconstruction of
+      // hidden anatomy or exact line art; manual clone patches can refine it.
+      final repairedBase = TransparentRegionInpainting.fillRemovedPixels(
+        base: base,
+        removed: removedPixels,
+      );
+      for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+          final index = y * width + x;
+          if (!removedPixels[index]) continue;
+          final pixel = repairedBase.getPixel(x, y);
+          base.setPixelRgba(x, y, pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt(), pixel.a.toInt());
+        }
+      }
+
+      // Clone intact source pixels into the exposed base after limb pixels are
+      // removed. The user chooses a clean source point and a repair target;
+      // this is a deterministic manual repair, not an automatic inpainting claim.
+      for (final patch in _repairPatches) {
+        final sx = (patch.source.dx * (width - 1)).round();
+        final sy = (patch.source.dy * (height - 1)).round();
+        final tx = (patch.target.dx * (width - 1)).round();
+        final ty = (patch.target.dy * (height - 1)).round();
+        final radius = math.max(1, (patch.radius * math.min(width, height)).round());
+        final sourcePixels = <({int dx, int dy, int r, int g, int b, int a})>[];
+        for (var dy = -radius; dy <= radius; dy++) {
+          for (var dx = -radius; dx <= radius; dx++) {
+            if (dx * dx + dy * dy > radius * radius) continue;
+            final px = sx + dx, py = sy + dy;
+            if (px < 0 || py < 0 || px >= width || py >= height) continue;
+            final pixel = source.getPixel(px, py);
+            sourcePixels.add((dx: dx, dy: dy, r: pixel.r.toInt(), g: pixel.g.toInt(),
+              b: pixel.b.toInt(), a: pixel.a.toInt()));
+          }
+        }
+        for (final pixel in sourcePixels) {
+          final px = tx + pixel.dx, py = ty + pixel.dy;
+          if (px < 0 || py < 0 || px >= width || py >= height) continue;
+          base.setPixelRgba(px, py, pixel.r, pixel.g, pixel.b, pixel.a);
+        }
       }
 
       // A rig with only one non-empty layer cannot articulate independently.
@@ -229,6 +475,11 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         'sourceHeight': height,
         'parts': savedParts,
         'strokes': _strokes.length,
+        'polygons': _polygons.length,
+        'repairPatches': _repairPatches.length,
+        'maskStrategy': 'filled_polygon_brush_local_inpainting_and_manual_clone_repair',
+        'automaticInpainting': 'neighbor_color_propagation',
+        'sourcePreserved': true,
         'coordinateSpace': 'full_canvas_normalized',
       };
       await File('${folder.path}/manifest.json').writeAsString(jsonEncode(manifest));
@@ -262,9 +513,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
         appBar: AppBar(
           title: const Text('تجهيز أجزاء الشخصية', style: TextStyle(fontWeight: FontWeight.w900)),
           actions: [
-            IconButton(tooltip: 'تراجع', onPressed: _strokes.isEmpty ? null : _undo,
+            IconButton(tooltip: 'تراجع', onPressed: (_strokes.isEmpty && _polygons.isEmpty && _polygonDraft.isEmpty) ? null : _undo,
                 icon: const Icon(Icons.undo_rounded)),
-            IconButton(tooltip: 'إعادة', onPressed: _redo.isEmpty ? null : _redoStroke,
+            IconButton(tooltip: 'إعادة', onPressed: (_redo.isEmpty && _redoPolygons.isEmpty) ? null : _redoStroke,
                 icon: const Icon(Icons.redo_rounded)),
           ],
         ),
@@ -278,7 +529,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                         const Padding(
                           padding: EdgeInsets.fromLTRB(18, 4, 18, 10),
                           child: Text(
-                            'لوّن فوق الجزء الذي تريد تحريكه. استخدم أجزاء منفصلة ولا تمرّر الفرشاة على الخلفية.',
+                            'حدّد كل قطعة على حدة: الرأس، الجذع، العضد والساعد لكل ذراع، والفخذ والساق السفلى لكل رجل. اجعل التحديدات تلتقي قليلًا عند الكوع والركبة، وتجنّب الخلفية.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: Color(0xFF697286), height: 1.5),
                           ),
@@ -301,6 +552,28 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
+                            ChoiceChip(label: const Text('منطقة كاملة'), selected: _polygonMode && !_repairMode,
+                              onSelected: (_) => setState(() { _repairMode = false; _polygonMode = true; _activePoints = null; })),
+                            ChoiceChip(label: const Text('فرشاة تصحيح'), selected: !_polygonMode && !_repairMode,
+                              onSelected: (_) => setState(() { _repairMode = false; _polygonMode = false; _polygonDraft.clear(); })),
+                            ChoiceChip(label: const Text('ترميم يدوي'), selected: _repairMode,
+                              onSelected: (_) => setState(() { _repairMode = true; _activePoints = null; _polygonDraft.clear(); _repairSource = null; })),
+                            if (_polygonMode && !_repairMode) ActionChip(label: Text('إغلاق المنطقة (${_polygonDraft.length})'),
+                              avatar: const Icon(Icons.check_circle_outline, size: 18), onPressed: _finishPolygon),
+                          ]),
+                        ),
+                        if (_repairMode)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                            child: Text(_repairSource == null
+                              ? 'الترميم: اضغط أولًا على منطقة سليمة لنسخها، ثم اضغط مكان المنطقة المخفية'
+                              : 'تم اختيار المصدر؛ اضغط الآن على موضع الترميم. عمليات الترميم: ${_repairPatches.length}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF526176))),
+                          ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(12),
@@ -308,6 +581,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                               final size = Size(constraints.maxWidth, constraints.maxHeight);
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
+                                onTapUp: (d) => _addPolygonPoint(d, size),
                                 onPanStart: (d) => _startStroke(d, size),
                                 onPanUpdate: (d) => _extendStroke(d, size),
                                 onPanEnd: _finishStroke,
@@ -324,6 +598,9 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                                     imageHeight: _decoded!.height,
                                     parts: _parts,
                                     strokes: List.of(_strokes),
+                                    polygons: List.of(_polygons),
+                                    polygonDraft: List.of(_polygonDraft),
+                                    polygonMode: _polygonMode,
                                     activePart: _selectedPart,
                                     activePoints: _activePoints == null ? null : List.of(_activePoints!),
                                     brushRadius: _brushRadius,
@@ -362,7 +639,7 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
                               SizedBox(
                                 width: double.infinity,
                                 child: FilledButton.icon(
-                                  onPressed: _strokes.isEmpty || _saving ? null : _saveRig,
+                                  onPressed: (_strokes.isEmpty && _polygons.isEmpty) || _saving ? null : _saveRig,
                                   icon: _saving
                                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                                       : const Icon(Icons.save_alt_rounded),
@@ -386,6 +663,9 @@ class _RigCanvasPainter extends CustomPainter {
     required this.imageHeight,
     required this.parts,
     required this.strokes,
+    required this.polygons,
+    required this.polygonDraft,
+    required this.polygonMode,
     required this.activePart,
     required this.activePoints,
     required this.brushRadius,
@@ -395,6 +675,9 @@ class _RigCanvasPainter extends CustomPainter {
   final int imageHeight;
   final List<_RigPart> parts;
   final List<_RigStroke> strokes;
+  final List<_RigPolygon> polygons;
+  final List<Offset> polygonDraft;
+  final bool polygonMode;
   final String activePart;
   final List<Offset>? activePoints;
   final double brushRadius;
@@ -423,6 +706,24 @@ class _RigCanvasPainter extends CustomPainter {
         canvas.drawPath(path, p);
       }
     }
+    for (final polygon in polygons) {
+      final part = parts.firstWhere((p) => p.id == polygon.partId);
+      final mapped = polygon.points.map((v) => Offset(rect.left + v.dx * rect.width, rect.top + v.dy * rect.height)).toList();
+      if (mapped.length >= 3) {
+        final path = Path()..moveTo(mapped.first.dx, mapped.first.dy);
+        for (final point in mapped.skip(1)) { path.lineTo(point.dx, point.dy); }
+        path.close();
+        canvas.drawPath(path, Paint()..color = part.color.withValues(alpha: 0.30)..style = PaintingStyle.fill);
+        canvas.drawPath(path, Paint()..color = part.color.withValues(alpha: 0.95)..style = PaintingStyle.stroke..strokeWidth = 2);
+      }
+    }
+    if (polygonMode && polygonDraft.isNotEmpty) {
+      final mapped = polygonDraft.map((v) => Offset(rect.left + v.dx * rect.width, rect.top + v.dy * rect.height)).toList();
+      final path = Path()..moveTo(mapped.first.dx, mapped.first.dy);
+      for (final point in mapped.skip(1)) { path.lineTo(point.dx, point.dy); }
+      canvas.drawPath(path, Paint()..color = parts.firstWhere((p) => p.id == activePart).color.withValues(alpha: 0.95)..style = PaintingStyle.stroke..strokeWidth = 3);
+      for (final point in mapped) { canvas.drawCircle(point, 4, Paint()..color = parts.firstWhere((p) => p.id == activePart).color); }
+    }
     for (final stroke in strokes) {
       drawStroke(stroke.partId, stroke.points, stroke.radius);
     }
@@ -433,6 +734,9 @@ class _RigCanvasPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RigCanvasPainter oldDelegate) =>
       oldDelegate.strokes != strokes ||
+      oldDelegate.polygons != polygons ||
+      oldDelegate.polygonDraft != polygonDraft ||
+      oldDelegate.polygonMode != polygonMode ||
       oldDelegate.activePoints != activePoints ||
       oldDelegate.activePart != activePart ||
       oldDelegate.brushRadius != brushRadius;
