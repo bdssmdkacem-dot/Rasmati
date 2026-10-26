@@ -43,9 +43,9 @@ class TransparentRegionInpainting {
             if (!known[ni]) continue;
             final p = result.getPixel(nx, ny);
             final weight = dx == 0 || dy == 0 ? 1.0 : 0.70710678;
-            r += p.r * weight;
-            g += p.g * weight;
-            b += p.b * weight;
+            r += p.r.toDouble() * weight;
+            g += p.g.toDouble() * weight;
+            b += p.b.toDouble() * weight;
             weightSum += weight;
           }
           if (weightSum > 0) {
