@@ -12,6 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
   image: ^4.5.4
+  flutter_onnxruntime: ^1.9.0
   path_provider: ^2.1.5
   flutter_animated_drawings:
     git:
