@@ -225,8 +225,8 @@ class _CharacterPartEditorState extends State<CharacterPartEditor> {
       for (final polygon in _polygons) {
         if (polygon.points.length < 3) continue;
         final vertices = polygon.points.map((point) => math.Point<int>(
-          (point.dx * (width - 1)).round().clamp(0, width - 1),
-          (point.dy * (height - 1)).round().clamp(0, height - 1),
+          (point.dx * (width - 1)).round().clamp(0, width - 1).toInt(),
+          (point.dy * (height - 1)).round().clamp(0, height - 1).toInt(),
         )).toList();
         img.fillPolygon(masks[polygon.partId]!, vertices: vertices,
           color: img.ColorRgba8(255, 255, 255, 255));
