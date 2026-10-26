@@ -27,6 +27,29 @@ void main() {
       expect(base.getPixel(1, 1).a, 0, reason: 'must not mutate the source base');
     });
 
+    test('continues a simple line through a one-pixel cutout', () {
+      final base = img.Image(width: 7, height: 7, numChannels: 4);
+      for (var y = 0; y < 7; y++) {
+        for (var x = 0; x < 7; x++) {
+          final isLine = x == 3;
+          base.setPixelRgba(x, y, isLine ? 0 : 245, isLine ? 0 : 245,
+              isLine ? 0 : 245, 255);
+        }
+      }
+      base.setPixelRgba(3, 3, 0, 0, 0, 0);
+      final removed = List<bool>.filled(49, false)..[3 * 7 + 3] = true;
+
+      final result = TransparentRegionInpainting.fillRemovedPixels(
+        base: base,
+        removed: removed,
+        patchRadius: 1,
+      );
+
+      final center = result.getPixel(3, 3);
+      expect(center.a, 255);
+      expect(center.r, lessThan(80), reason: 'the black line should continue');
+    });
+
     test('preserves unrelated transparent background', () {
       final base = img.Image(width: 3, height: 1, numChannels: 4);
       base.setPixelRgba(0, 0, 0, 0, 0, 0);
