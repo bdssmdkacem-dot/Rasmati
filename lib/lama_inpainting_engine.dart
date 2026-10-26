@@ -62,13 +62,13 @@ class LamaInpaintingEngine {
     required img.Image base,
     required List<bool> removedMask,
   }) async {
-    final session = _session;
-    if (session == null) throw StateError('LaMa model is not loaded.');
     final expected = base.width * base.height;
     if (removedMask.length != expected) {
       throw ArgumentError('Mask has ${removedMask.length} entries; expected $expected.');
     }
     if (!removedMask.any((value) => value)) return img.Image.from(base);
+    final session = _session;
+    if (session == null) throw StateError('LaMa model is not loaded.');
 
     final resized = img.copyResize(
       base,
